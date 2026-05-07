@@ -1,0 +1,122 @@
+[
+  {
+    "id": "qra_best-crm-small-business",
+    "platform": "quora",
+    "title": "What is the best CRM tool for a small marketing agency in 2025?",
+    "body": "We run a 6-person marketing agency and currently manage client relationships in spreadsheets. It's becoming a bottleneck — we're losing leads and can't keep up with follow-ups. I've looked at HubSpot and Zoho but pricing is confusing. Has anyone found a CRM that works well specifically for agencies? Ideally something that integrates with Slack and doesn't require a full-time admin to manage.",
+    "url": "https://www.quora.com/What-is-the-best-CRM-tool-for-a-small-marketing-agency-in-2025",
+    "score": 312,
+    "author": "Rachel Kim",
+    "topic": "Marketing-Technology"
+  },
+  {
+    "id": "qra_automate-social-media-replies",
+    "platform": "quora",
+    "title": "How do I automate social media monitoring and replies without sounding like a bot?",
+    "body": "I manage social media for 8 clients and spending 3+ hours a day just finding relevant conversations to join on Reddit and Twitter. I've tried Buffer and Hootsuite but they don't help with discovery — only scheduling. Is there a tool that can surface relevant threads where my clients should be commenting? The manual process is killing my productivity and it doesn't scale.",
+    "url": "https://www.quora.com/How-do-I-automate-social-media-monitoring-and-replies-without-sounding-like-a-bot",
+    "score": 487,
+    "author": "James Okafor",
+    "topic": "Social-Media-Marketing"
+  },
+  {
+    "id": "qra_ai-content-creation-workflow",
+    "platform": "quora",
+    "title": "What AI tools do you recommend for content creation workflows in B2B marketing?",
+    "body": "Looking for recommendations on AI tools that can help my team produce high-quality B2B content at scale. We currently write everything manually — blog posts, LinkedIn updates, Reddit replies for community building. The bottleneck is that writing takes forever and we can't keep up with demand. We've tried Jasper and Copy.ai but neither understands our brand voice well. Any alternatives worth trying?",
+    "url": "https://www.quora.com/What-AI-tools-do-you-recommend-for-content-creation-workflows-in-B2B-marketing",
+    "score": 203,
+    "author": "Priya Nair",
+    "topic": "Artificial-Intelligence"
+  },
+  {
+    "id": "qra_pain-points-social-media-agencies",
+    "platform": "quora",
+    "title": "What are the biggest pain points for social media marketing agencies in 2025?",
+    "body": "I'm researching the social media agency space and want to understand what operations actually look like day-to-day. From what I've gathered, the main frustrations are: 1) finding relevant conversations to join, 2) writing non-generic responses at scale, 3) tracking engagement ROI, 4) client reporting. Am I missing something? What do agency owners find most unsustainable about their workflow? I'm particularly interested in the discovery problem — how do you find threads worth engaging with?",
+    "url": "https://www.quora.com/What-are-the-biggest-pain-points-for-social-media-marketing-agencies-in-2025",
+    "score": 156,
+    "author": "David Schultz",
+    "topic": "Digital-Marketing"
+  },
+  {
+    "id": "qra_reddit-marketing-strategy",
+    "platform": "quora",
+    "title": "How do you build an effective Reddit marketing strategy without getting banned?",
+    "body": "I've been trying to use Reddit as a marketing channel for our SaaS product. We tried posting promotional content and got our account banned. Now I understand the culture better but I'm struggling with the discovery part — how do you find the right threads where your product is genuinely relevant? And how do you write replies that add value rather than feel spammy? Is there any tool that helps with this workflow or is it all manual research?",
+    "url": "https://www.quora.com/How-do-you-build-an-effective-Reddit-marketing-strategy-without-getting-banned",
+    "score": 891,
+    "author": "Samira Hosseini",
+    "topic": "Reddit"
+  },
+  {
+    "id": "qra_hiring-marketing-automation",
+    "platform": "quora",
+    "title": "We are hiring a marketing automation specialist — what skills should I look for?",
+    "body": "Our startup is looking to hire someone to own our marketing automation stack. We're currently using HubSpot, Zapier, and doing a lot of manual Reddit and LinkedIn engagement. We need someone who can reduce the manual overhead and set up proper workflows. Should I look for someone with a specific tool background (like Marketo vs HubSpot) or more of a generalist who can work across platforms? We're a team of 12, Series A stage.",
+    "url": "https://www.quora.com/We-are-hiring-a-marketing-automation-specialist-what-skills-should-I-look-for",
+    "score": 74,
+    "author": "Tyler Brooks",
+    "topic": "Startup-Hiring"
+  },
+  {
+    "id": "qra_alternative-to-sprout-social",
+    "platform": "quora",
+    "title": "What is a good alternative to Sprout Social that is cheaper but still has good analytics?",
+    "body": "We've been using Sprout Social for 18 months and the price just went up again — now $399/month for our team size. The analytics are great but it's becoming hard to justify. Looking for alternatives that have: decent listening/monitoring features, team inbox, content scheduling, and basic analytics. We don't need enterprise features. Would love to hear from people who have switched and what they switched to.",
+    "url": "https://www.quora.com/What-is-a-good-alternative-to-Sprout-Social-that-is-cheaper-but-still-has-good-analytics",
+    "score": 445,
+    "author": "Aisha Mensah",
+    "topic": "Social-Media-Tools"
+  },
+  {
+    "id": "qra_manual-engagement-not-scaling",
+    "platform": "quora",
+    "title": "How do large B2B companies handle community engagement at scale? Manual replies don't scale.",
+    "body": "We're a B2B SaaS company with a growing community across Reddit, LinkedIn, and a few niche forums. Right now two people on our team manually monitor these communities 4-5 hours per day looking for relevant conversations. This doesn't scale. I've been told we need to hire more people but I feel like there should be a software solution. How do larger companies handle this? Is there a tool that monitors multiple platforms, surfaces relevant threads, and helps draft replies?",
+    "url": "https://www.quora.com/How-do-large-B2B-companies-handle-community-engagement-at-scale-Manual-replies-dont-scale",
+    "score": 328,
+    "author": "Marcus Webb",
+    "topic": "B2B-Marketing"
+  },
+  {
+    "id": "qra_content-automation-frustration",
+    "platform": "quora",
+    "title": "Why do AI content tools feel so generic and how can I make AI-written content actually sound human?",
+    "body": "I've tried at least 12 different AI writing tools and they all produce content that sounds the same — bland, corporate, obvious. I've spent more time editing AI output than it would take to write from scratch. The tools that let me train on my brand voice either cost a fortune or require a data science team to set up. This is genuinely frustrating because the promise of AI content automation sounded amazing. Am I doing something wrong or is this a fundamental limitation right now?",
+    "url": "https://www.quora.com/Why-do-AI-content-tools-feel-so-generic-and-how-can-I-make-AI-written-content-actually-sound-human",
+    "score": 672,
+    "author": "Nadia Voronova",
+    "topic": "AI-Writing-Tools"
+  },
+  {
+    "id": "qra_workflow-automation-2025",
+    "platform": "quora",
+    "title": "What workflow automation tools are people actually using in 2025 for marketing teams?",
+    "body": "Looking for an honest comparison of what real marketing teams are using for workflow automation — not vendor-paid content. We're a 10-person marketing team and currently use Zapier for basic automations but it's getting expensive and some things require way too much manual setup. Considering Make (formerly Integromat), n8n, or just building custom integrations. What do people recommend? Especially interested in anything that helps with content monitoring and engagement workflows.",
+    "url": "https://www.quora.com/What-workflow-automation-tools-are-people-actually-using-in-2025-for-marketing-teams",
+    "score": 519,
+    "author": "Carlos Ruiz",
+    "topic": "Marketing-Automation"
+  },
+  {
+    "id": "qra_deleted-question",
+    "platform": "quora",
+    "title": "",
+    "body": "",
+    "url": "https://www.quora.com/deleted-question-1234",
+    "score": 0,
+    "author": "",
+    "topic": ""
+  },
+  {
+    "id": "qra_low-effort-question",
+    "platform": "quora",
+    "title": "Is HubSpot good?",
+    "body": "Yes.",
+    "url": "https://www.quora.com/Is-HubSpot-good",
+    "score": 2,
+    "author": "anonymous",
+    "topic": "CRM"
+  }
+]

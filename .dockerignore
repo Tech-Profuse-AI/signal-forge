@@ -1,0 +1,9 @@
+__pycache__/
+.pytest_cache/
+venv/
+.env
+tests/.tmp_phase*
+outputs/
+cache/
+.git/
+.benchmarks/

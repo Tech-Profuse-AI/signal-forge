@@ -1,0 +1,86 @@
+{
+  "updated_at": "2026-05-05T10:45:16+00:00",
+  "score_weight_adjustments": {
+    "intent_weight_deltas": {},
+    "threshold_deltas": {},
+    "baseline_reference": {
+      "default_intent_weights": {
+        "buying_intent": 40.0,
+        "churn_risk": 38.0,
+        "problem_intent": 32.0,
+        "hiring_intent": 28.0,
+        "competitor_mention": 26.0,
+        "feature_request": 25.0,
+        "ignore": 0.0
+      },
+      "default_hot_threshold": 80.0,
+      "default_warm_threshold": 60.0,
+      "default_cold_threshold": 30.0
+    },
+    "application_notes": "Merge intent_weight_deltas into ScoringConfig.intent_weights. Add threshold_deltas to hot/warm/cold thresholds (clamp 0-100). OpportunityScoringAgent itself is unchanged \u2014 apply in your runner.",
+    "rationale": []
+  },
+  "platform_priority_adjustments": {
+    "platform_multipliers": {},
+    "rationale": [],
+    "application_notes": "Use multipliers to rank or schedule opportunities post-score; not applied inside OpportunityScoringAgent by default."
+  },
+  "intent_priority_adjustments": {
+    "intent_multipliers": {},
+    "rationale": [],
+    "application_notes": "Combine with score_weight_adjustments: weights change the model, multipliers help ordering and capacity allocation."
+  },
+  "drafting_insights": {
+    "edited_vs_approved": {
+      "edited": {
+        "count": 0,
+        "avg_word_count": 0.0,
+        "tone_distribution": {},
+        "cta_present_rate": 0.0
+      },
+      "approved": {
+        "count": 0,
+        "avg_word_count": 0.0,
+        "tone_distribution": {},
+        "cta_present_rate": 0.0
+      }
+    },
+    "inferred_patterns": [],
+    "note": "Analytics events store pre-review ``draft`` only; final human text after edit is not in analytics.json."
+  },
+  "confidence": 0.4729,
+  "patterns_summary": {
+    "intent_performance": {
+      "unknown": {
+        "reviews": {},
+        "review_total": 0,
+        "approval_rate": 0.0,
+        "publish_total": 1,
+        "publish_success_rate": 1.0
+      }
+    },
+    "platform_performance": {
+      "scheduler": {
+        "review_outcomes": {},
+        "review_total": 0,
+        "approval_rate": 0.0,
+        "publish_outcomes": {
+          "success": 1
+        },
+        "publish_total": 1,
+        "publish_success_rate": 1.0
+      }
+    },
+    "score_quality": {
+      "by_priority_label": {},
+      "median_priority_score": 0.0,
+      "approved_score_median": 0.0,
+      "rejected_score_median": 0.0,
+      "low_score_approval_share": 0.0
+    },
+    "counts": {
+      "review_events": 0,
+      "publish_events": 1
+    }
+  }
+}

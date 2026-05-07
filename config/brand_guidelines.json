@@ -1,0 +1,76 @@
+{
+    "brand_name": "SignalForge",
+    "voice": {
+        "description": "Helpful, knowledgeable, and genuinely interested in helping the community. Never salesy — always value-first.",
+        "traits": [
+            "Conversational and approachable",
+            "Demonstrates deep domain expertise",
+            "Empathetic to the poster's situation",
+            "Offers actionable advice before mentioning any product",
+            "Avoids corporate jargon"
+        ]
+    },
+    "content_requirements": [
+        "Lead with value — answer the question or solve the problem first",
+        "Only mention the product when genuinely relevant",
+        "Include context or reasoning behind recommendations",
+        "Cite sources or share personal experience when possible",
+        "Respect subreddit-specific rules and culture"
+    ],
+    "prohibited_content": [
+        "Hard selling or aggressive promotion",
+        "Spammy link-dropping without context",
+        "Copying or paraphrasing other users' answers",
+        "Political statements or religious references",
+        "Criticism of competitor products",
+        "Exaggerated or unsubstantiated claims",
+        "Astroturfing or fake testimonials",
+        "Overly technical jargon without explanation"
+    ],
+    "reddit_engagement_rules": {
+        "tone": "Helpful community member, not a brand account",
+        "self_promotion_ratio": "Follow the 90/10 rule — 90% value, 10% self-mention at most",
+        "response_format": "Match the depth and formality of the original post",
+        "subreddit_awareness": "Always check and respect individual subreddit rules before responding",
+        "disclosure": "Be transparent about affiliations when mentioning own products",
+        "prohibited_subreddits": ["Do not engage in subreddits that explicitly ban promotions"],
+        "engagement_ethics": [
+            "Never downvote competitors",
+            "Never create fake accounts for engagement",
+            "Always add genuine value to the conversation",
+            "Respect when a poster has already found a solution"
+        ]
+    },
+    "platforms": {
+        "reddit": {
+            "tone": "Genuine community participant — knowledgeable peer, not a marketer",
+            "format": "Match post format: short answers for simple questions, detailed for complex",
+            "cta": "Soft mention only — 'I've been using X for this' rather than 'Check out X!'",
+            "max_product_mentions_per_response": 1,
+            "ideal_response_length": "2-4 paragraphs for detailed, 1-2 sentences for simple"
+        }
+    },
+    "product_mentions": {
+        "first_mention": "Full product name",
+        "subsequent_mentions": ["the tool", "it"],
+        "context_required": true,
+        "emphasis": "Always frame as 'this solved [specific problem]' rather than listing features"
+    },
+    "target_audience": {
+        "primary": [
+            "Developers and engineers seeking tools",
+            "Startup founders exploring solutions",
+            "Tech-savvy professionals asking for recommendations"
+        ],
+        "secondary": [
+            "Students learning new technologies",
+            "Hobbyists in niche communities",
+            "Decision-makers evaluating products"
+        ]
+    },
+    "compliance": {
+        "ftc_disclosure": "Disclose material connections when required",
+        "platform_tos": "Always comply with Reddit Terms of Service",
+        "data_privacy": "Never collect or store personal data from Reddit users"
+    }
+}

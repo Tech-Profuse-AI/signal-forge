@@ -1,0 +1,53 @@
+{
+  "updated_at": "2026-05-05T10:45:16+00:00",
+  "report": {
+    "review_outcomes": {
+      "approved": 0,
+      "rejected": 0,
+      "edited": 0
+    },
+    "publish_outcomes": {
+      "success": 1,
+      "failure": 0
+    },
+    "rates": {
+      "approval_rate": 0.0,
+      "rejection_rate": 0.0,
+      "edit_rate": 0.0,
+      "publish_success_rate": 1.0
+    },
+    "platform_distribution": {
+      "scheduler": 1
+    },
+    "top_intents": [],
+    "top_sources": [
+      {
+        "source": "scheduler",
+        "count": 1
+      }
+    ],
+    "total_pipeline_volume": 1
+  },
+  "review_events": [],
+  "publish_events": [
+    {
+      "tracked_at": "2026-05-05T10:45:16+00:00",
+      "opportunity": {
+        "id": "task-bc91ab525db9",
+        "platform": "scheduler",
+        "source": "scheduler",
+        "query": "social media automation tools"
+      },
+      "draft": {
+        "title": "scheduled:daily",
+        "draft": "social media automation tools"
+      },
+      "publish_result": {
+        "success": true,
+        "platform": "scheduler",
+        "published_url": null,
+        "status": "ok (frequency=daily)"
+      }
+    }
+  ]
+}

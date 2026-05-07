@@ -1,0 +1,32 @@
+services:
+  signalforge-app:
+    build: .
+    container_name: signalforge_app
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    command: python start.py --mode scheduler
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  signalforge-ui:
+    build: .
+    container_name: signalforge_ui
+    ports:
+      - "8502:8501"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    command: python start.py --mode ui

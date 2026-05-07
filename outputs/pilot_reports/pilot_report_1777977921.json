@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-05-05T16:15:20.290613",
+  "query": "social media automation tools",
+  "configured_runs": 1,
+  "actual_runs": 1,
+  "success_rate": "100.0%",
+  "metrics": {
+    "opportunities_discovered": 6,
+    "review_items_created": 6,
+    "analytics_events_created": 0,
+    "avg_opportunities_per_run": 6.0
+  },
+  "learning_adjustments_observed": false,
+  "baseline_learning": {
+    "score_weight_adjustments": {
+      "intent_weight_deltas": {},
+      "threshold_deltas": {},
+      "baseline_reference": {
+        "default_intent_weights": {
+          "buying_intent": 40.0,
+          "churn_risk": 38.0,
+          "problem_intent": 32.0,
+          "hiring_intent": 28.0,
+          "competitor_mention": 26.0,
+          "feature_request": 25.0,
+          "ignore": 0.0
+        },
+        "default_hot_threshold": 80.0,
+        "default_warm_threshold": 60.0,
+        "default_cold_threshold": 30.0
+      },
+      "application_notes": "Merge intent_weight_deltas into ScoringConfig.intent_weights. Add threshold_deltas to hot/warm/cold thresholds (clamp 0-100). OpportunityScoringAgent itself is unchanged \u2014 apply in your runner.",
+      "rationale": []
+    },
+    "platform_priority_adjustments": {
+      "platform_multipliers": {},
+      "rationale": [],
+      "application_notes": "Use multipliers to rank or schedule opportunities post-score; not applied inside OpportunityScoringAgent by default."
+    },
+    "intent_priority_adjustments": {
+      "intent_multipliers": {},
+      "rationale": [],
+      "application_notes": "Combine with score_weight_adjustments: weights change the model, multipliers help ordering and capacity allocation."
+    },
+    "drafting_insights": {
+      "edited_vs_approved": {
+        "edited": {
+          "count": 0,
+          "avg_word_count": 0.0,
+          "tone_distribution": {},
+          "cta_present_rate": 0.0
+        },
+        "approved": {
+          "count": 1,
+          "avg_word_count": 0.0,
+          "tone_distribution": {
+            "unknown": 1
+          },
+          "cta_present_rate": 0.0
+        }
+      },
+      "inferred_patterns": [],
+      "note": "Analytics events store pre-review ``draft`` only; final human text after edit is not in analytics.json."
+    },
+    "confidence": 0.4729
+  },
+  "final_learning": {
+    "score_weight_adjustments": {
+      "intent_weight_deltas": {},
+      "threshold_deltas": {},
+      "baseline_reference": {
+        "default_intent_weights": {
+          "buying_intent": 40.0,
+          "churn_risk": 38.0,
+          "problem_intent": 32.0,
+          "hiring_intent": 28.0,
+          "competitor_mention": 26.0,
+          "feature_request": 25.0,
+          "ignore": 0.0
+        },
+        "default_hot_threshold": 80.0,
+        "default_warm_threshold": 60.0,
+        "default_cold_threshold": 30.0
+      },
+      "application_notes": "Merge intent_weight_deltas into ScoringConfig.intent_weights. Add threshold_deltas to hot/warm/cold thresholds (clamp 0-100). OpportunityScoringAgent itself is unchanged \u2014 apply in your runner.",
+      "rationale": []
+    },
+    "platform_priority_adjustments": {
+      "platform_multipliers": {},
+      "rationale": [],
+      "application_notes": "Use multipliers to rank or schedule opportunities post-score; not applied inside OpportunityScoringAgent by default."
+    },
+    "intent_priority_adjustments": {
+      "intent_multipliers": {},
+      "rationale": [],
+      "application_notes": "Combine with score_weight_adjustments: weights change the model, multipliers help ordering and capacity allocation."
+    },
+    "drafting_insights": {
+      "edited_vs_approved": {
+        "edited": {
+          "count": 0,
+          "avg_word_count": 0.0,
+          "tone_distribution": {},
+          "cta_present_rate": 0.0
+        },
+        "approved": {
+          "count": 1,
+          "avg_word_count": 0.0,
+          "tone_distribution": {
+            "unknown": 1
+          },
+          "cta_present_rate": 0.0
+        }
+      },
+      "inferred_patterns": [],
+      "note": "Analytics events store pre-review ``draft`` only; final human text after edit is not in analytics.json."
+    },
+    "confidence": 0.4729
+  },
+  "failed_runs": [],
+  "system_stability": "VERIFIED"
+}
