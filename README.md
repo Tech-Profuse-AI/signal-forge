@@ -30,7 +30,7 @@ SignalForge/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/SH-Nihil-Mukkesh-25/signal-forge.git
+   git clone https://github.com/Tech-Profuse-AI/signal-forge.git
    cd signal-forge
    ```
 
@@ -60,6 +60,27 @@ SignalForge/
    ```bash
    python main.py
    ```
+
+## Running the Application
+
+### Command Line Execution
+You can run the end-to-end SignalForge pipeline using the CLI runner. It supports both a mock mode (using offline data for testing) and a live mode (using real LLM providers and platform APIs).
+
+**Run in Mock Mode**
+```bash
+python run_signalforge.py --mock "AI workflow automation pain points"
+```
+
+**Run in Live Mode**
+```bash
+python run_signalforge.py --live "AI workflow automation pain points"
+```
+
+### Streamlit Web Interface
+SignalForge provides an interactive dashboard to explore opportunities, review intents, and monitor the pipeline.
+```bash
+streamlit run ui/app.py
+```
 
 ## Testing
 
