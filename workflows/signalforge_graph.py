@@ -12,6 +12,7 @@ existing agents and preserves structured metadata across all stages.
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 import langchain_core.messages as langchain_messages
@@ -220,20 +221,45 @@ class SignalForgeGraph:
         errors = list(state.get("errors", []))
         results: List[IntentPayload] = []
 
-        for opportunity in state["opportunities"]:
+        def process_opportunity(opportunity: Dict[str, Any]) -> Tuple[IntentPayload, Optional[PipelineError]]:
             try:
-                result = self._intent_agent.classify(opportunity)
+                res = self._intent_agent.classify(opportunity)
+                return res, None
             except Exception as exc:
                 logger.exception(
                     "intent phase failed for [%s]",
                     opportunity.get("id", "unknown"),
                 )
-                errors.append(self._build_error("intent", opportunity.get("id"), exc))
-                result = self._intent_fallback(str(exc))
-            results.append(result)
+                err = self._build_error("intent", opportunity.get("id"), exc)
+                return self._intent_fallback(str(exc)), err
 
-        logger.info("intent phase end - %d results", len(results))
-        return {"intent_results": results, "errors": errors}
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            mapped = pool.map(process_opportunity, state["opportunities"])
+
+        for res, err in mapped:
+            results.append(res)
+            if err:
+                errors.append(err)
+
+        filtered_opportunities = []
+        filtered_results = []
+        filtered_count = 0
+        for opp, res in zip(state["opportunities"], results):
+            if res.get("intent") == "ignore":
+                filtered_count += 1
+            else:
+                filtered_opportunities.append(opp)
+                filtered_results.append(res)
+
+        if filtered_count > 0:
+            logger.info("Filtered out %d items with ignore intent", filtered_count)
+
+        logger.info("intent phase end - %d results", len(filtered_results))
+        return {
+            "opportunities": filtered_opportunities,
+            "intent_results": filtered_results,
+            "errors": errors
+        }
 
     def scoring_node(self, state: SignalForgeState) -> Dict[str, Any]:
         logger.info("scoring phase start")
@@ -293,28 +319,39 @@ class SignalForgeGraph:
         errors = list(state.get("errors", []))
         results: List[DraftPayload] = []
 
-        for opportunity, intent, score, knowledge in zip(
+        def process_draft(item: Tuple[Any, Any, Any, Any]) -> Tuple[DraftPayload, Optional[PipelineError]]:
+            opp, intnt, scr, know = item
+            draft_in = {
+                "opportunity": opp,
+                "intent_data": intnt,
+                "score_data": scr,
+                "knowledge_context": know,
+            }
+            try:
+                res = self._drafting_agent.generate_draft(draft_in)
+                return res, None
+            except Exception as exc:
+                logger.exception(
+                    "drafting phase failed for [%s]",
+                    opp.get("id", "unknown"),
+                )
+                err = self._build_error("drafting", opp.get("id"), exc)
+                return self._draft_fallback(str(exc)), err
+
+        items = zip(
             state["opportunities"],
             state["intent_results"],
             state["scored_results"],
             state["knowledge_results"],
-        ):
-            draft_input = {
-                "opportunity": opportunity,
-                "intent_data": intent,
-                "score_data": score,
-                "knowledge_context": knowledge,
-            }
-            try:
-                result = self._drafting_agent.generate_draft(draft_input)
-            except Exception as exc:
-                logger.exception(
-                    "drafting phase failed for [%s]",
-                    opportunity.get("id", "unknown"),
-                )
-                errors.append(self._build_error("drafting", opportunity.get("id"), exc))
-                result = self._draft_fallback(str(exc))
-            results.append(result)
+        )
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            mapped = pool.map(process_draft, items)
+
+        for res, err in mapped:
+            results.append(res)
+            if err:
+                errors.append(err)
 
         logger.info("drafting phase end - %d results", len(results))
         return {"draft_results": results, "errors": errors}
@@ -362,16 +399,18 @@ class SignalForgeGraph:
                 "review_state": review_state,
             })
 
-        unique_failed_ids = {
-            item["opportunity_id"] for item in errors if item.get("opportunity_id")
-        }
-        success_count = max(0, len(state["opportunities"]) - len(unique_failed_ids))
-        failure_count = len(unique_failed_ids) + len(
-            [item for item in errors if item.get("opportunity_id") is None]
+        success_count = sum(
+            1 for item in compliance_results if item.get("approved") is True
+        )
+        failure_count = sum(
+            1
+            for item in compliance_results
+            if item.get("approved") is False and item.get("violations")
         )
 
         logger.info(
-            "compliance phase end - %d final results, %d successes, %d failures",
+            "compliance phase end - %d final results, "
+            "%d compliance successes, %d compliance failures",
             len(final_results),
             success_count,
             failure_count,
@@ -546,4 +585,3 @@ __all__ = [
     "SignalForgeGraph",
     "build_signalforge_graph",
 ]
-

@@ -100,6 +100,7 @@ class MediumScannerAgent:
         self._cache = CacheManager(
             cache_dir=cache_dir,
             cache_filename="seen_medium_posts.json",
+            max_age_days=7,
         )
         self._filter = OpportunityFilter(
             config=filter_config or self._medium_filter_config()
@@ -290,7 +291,7 @@ class MediumScannerAgent:
         """
         config = FilterConfig(
             minimum_score=1,         # proxy scores start low
-            minimum_body_length=200, # articles are long-form
+            minimum_body_length=50,  # Medium RSS feeds return truncated previews, not full article bodies
         )
         # Medium articles don't have subreddits; clear Reddit-specific rules
         config.blacklisted_subreddits = []

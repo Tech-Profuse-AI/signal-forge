@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -41,11 +41,13 @@ class CacheManager:
         cache_dir: Optional[str] = None,
         cache_filename: str = "seen_posts.json",
         ephemeral: bool = False,
+        max_age_days: int = 7,
     ) -> None:
         # ephemeral=True: keep the cache in memory only (never read/write disk).
         # Used by mock mode so fixed mock post IDs are never persisted and
         # every pipeline run always operates against the full mock dataset.
         self._ephemeral = ephemeral
+        self._max_age_days = max_age_days
         self._cache_dir = Path(cache_dir) if cache_dir else _DEFAULT_CACHE_DIR
         self._cache_file = self._cache_dir / cache_filename
         if not ephemeral:
@@ -60,11 +62,19 @@ class CacheManager:
 
     def has_seen(self, post_id: str) -> bool:
         """Return True if this post ID has been marked as seen."""
-        return post_id in self._cache
+        seen_at = self._cache.get(post_id)
+        if not seen_at:
+            return False
+        if self._is_expired(seen_at):
+            del self._cache[post_id]
+            self._save()
+            logger.debug("Expired cache entry pruned on lookup: %s", post_id)
+            return False
+        return True
 
     def mark_seen(self, post_id: str) -> None:
         """Record a post ID as seen and persist to disk."""
-        if post_id not in self._cache:
+        if not self.has_seen(post_id):
             self._cache[post_id] = datetime.now(timezone.utc).isoformat()
             self._save()
             logger.debug("Marked as seen: %s", post_id)
@@ -74,7 +84,7 @@ class CacheManager:
         now = datetime.now(timezone.utc).isoformat()
         new_count = 0
         for pid in post_ids:
-            if pid not in self._cache:
+            if not self.has_seen(pid):
                 self._cache[pid] = now
                 new_count += 1
         if new_count:
@@ -100,10 +110,30 @@ class CacheManager:
         try:
             with open(self._cache_file, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
-            return data if isinstance(data, dict) else {}
+            if not isinstance(data, dict):
+                return {}
+            fresh_entries: Dict[str, str] = {}
+            for post_id, seen_at in data.items():
+                if isinstance(seen_at, str) and not self._is_expired(seen_at):
+                    fresh_entries[post_id] = seen_at
+            return fresh_entries
         except (json.JSONDecodeError, OSError) as exc:
             logger.warning("Failed to load cache: %s", exc)
             return {}
+
+    def _is_expired(self, seen_at: str) -> bool:
+        if self._max_age_days < 0:
+            return False
+        try:
+            seen_dt = datetime.fromisoformat(seen_at)
+        except ValueError:
+            return True
+        if seen_dt.tzinfo is None:
+            seen_dt = seen_dt.replace(tzinfo=timezone.utc)
+        else:
+            seen_dt = seen_dt.astimezone(timezone.utc)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=self._max_age_days)
+        return seen_dt < cutoff
 
     def _save(self) -> None:
         if self._ephemeral:

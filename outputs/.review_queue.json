@@ -7858,6 +7858,297 @@
       "created_at": "2026-05-05T11:59:14+00:00",
       "dequeued_at": "",
       "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_001-17",
+      "review_status": "pending",
+      "reviewer_action": "",
+      "final_draft": "It sounds like you're definitely feeling the crunch of manual social media management \u2013 spending 4+ hours daily on scheduling, replies, and tracking for a small agency is a huge drain on productivity. It's a common challenge, especially when juggling multiple platforms like Instagram and Reddit. To tackle this, you'll want to look for tools that offer a good balance of scheduling, engagement, and reporting features within your $50/month budget. Here's what to consider: 1. **Unified Scheduling & Publishing:** For Instagram, most social media management tools can handle scheduling posts, stories, and even reels. Look for features like content calendars, bulk scheduling, and auto-publishing. This alone can save you significant time. 2. **Engagement Management:** A central inbox where you can see and reply to comments and DMs from Instagram (and ideally Reddit, if the tool supports it) can be a game-changer. This prevents you from jumping between apps constantly. 3. **Analytics & Reporting:** Having a dashboard that tracks key metrics like engagement rate, follower growth, and post performance across platforms will help you quickly assess what's working and report back to clients, rather than compiling data manually. Reddit can be a bit trickier to automate compared to Instagram. While some tools offer basic scheduling for posts, direct engagement (like replying to comments in specific subreddits) often requires a more hands-on, community-focused approach to avoid sounding inauthentic. For Reddit, you might consider a combination of a scheduling tool and dedicated time for manual, authentic engagement. Given your budget, many platforms offer starter or 'solo' plans that could fit. Focus on features that directly address your biggest time sinks first. It's often best to pick one or two core problems to solve with a tool, rather than trying to find one that does absolutely everything perfectly from day one.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_001",
+        "title": "Need help automating my social media workflow \u2014 any tool recommendations?",
+        "body": "I'm running a small marketing agency and spending 4+ hours daily on scheduling, replying to comments, and tracking engagement across platforms. Looking for tools or workflows that can help me automate at least part of this. We mainly use Instagram and Reddit. Budget is around $50/month. Any suggestions from people who've solved this? Currently doing everything manually in spreadsheets and it's killing my productivity.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock001/need_help_automating",
+        "score": 47,
+        "author": "marketingmike",
+        "subreddit": "socialmedia",
+        "created_utc": 1714400000.0,
+        "num_comments": 23,
+        "opportunity_signals": [
+          "help_request",
+          "recommendation_request",
+          "pain_point",
+          "bottleneck"
+        ]
+      },
+      "draft": {
+        "draft": "It sounds like you're definitely feeling the crunch of manual social media management \u2013 spending 4+ hours daily on scheduling, replies, and tracking for a small agency is a huge drain on productivity. It's a common challenge, especially when juggling multiple platforms like Instagram and Reddit. To tackle this, you'll want to look for tools that offer a good balance of scheduling, engagement, and reporting features within your $50/month budget. Here's what to consider: 1. **Unified Scheduling & Publishing:** For Instagram, most social media management tools can handle scheduling posts, stories, and even reels. Look for features like content calendars, bulk scheduling, and auto-publishing. This alone can save you significant time. 2. **Engagement Management:** A central inbox where you can see and reply to comments and DMs from Instagram (and ideally Reddit, if the tool supports it) can be a game-changer. This prevents you from jumping between apps constantly. 3. **Analytics & Reporting:** Having a dashboard that tracks key metrics like engagement rate, follower growth, and post performance across platforms will help you quickly assess what's working and report back to clients, rather than compiling data manually. Reddit can be a bit trickier to automate compared to Instagram. While some tools offer basic scheduling for posts, direct engagement (like replying to comments in specific subreddits) often requires a more hands-on, community-focused approach to avoid sounding inauthentic. For Reddit, you might consider a combination of a scheduling tool and dedicated time for manual, authentic engagement. Given your budget, many platforms offer starter or 'solo' plans that could fit. Focus on features that directly address your biggest time sinks first. It's often best to pick one or two core problems to solve with a tool, rather than trying to find one that does absolutely everything perfectly from day one.",
+        "tone": "expert",
+        "cta": "",
+        "reasoning": "The reply adopts an expert tone by breaking down the user's problem into actionable areas (scheduling, engagement, analytics) and offering structured advice on what features to look for. It directly addresses the user's pain points and platform specifics (Instagram and Reddit) while staying within the stated budget, without hard-selling or mentioning any specific product due to lack of product knowledge."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "It sounds like you're definitely feeling the crunch of manual social media management \u2013 spending 4+ hours daily on scheduling, replies, and tracking for a small agency is a huge drain on productivity. It's a common challenge, especially when juggling multiple platforms like Instagram and Reddit. To tackle this, you'll want to look for tools that offer a good balance of scheduling, engagement, and reporting features within your $50/month budget. Here's what to consider: 1. **Unified Scheduling & Publishing:** For Instagram, most social media management tools can handle scheduling posts, stories, and even reels. Look for features like content calendars, bulk scheduling, and auto-publishing. This alone can save you significant time. 2. **Engagement Management:** A central inbox where you can see and reply to comments and DMs from Instagram (and ideally Reddit, if the tool supports it) can be a game-changer. This prevents you from jumping between apps constantly. 3. **Analytics & Reporting:** Having a dashboard that tracks key metrics like engagement rate, follower growth, and post performance across platforms will help you quickly assess what's working and report back to clients, rather than compiling data manually. Reddit can be a bit trickier to automate compared to Instagram. While some tools offer basic scheduling for posts, direct engagement (like replying to comments in specific subreddits) often requires a more hands-on, community-focused approach to avoid sounding inauthentic. For Reddit, you might consider a combination of a scheduling tool and dedicated time for manual, authentic engagement. Given your budget, many platforms offer starter or 'solo' plans that could fit. Focus on features that directly address your biggest time sinks first. It's often best to pick one or two core problems to solve with a tool, rather than trying to find one that does absolutely everything perfectly from day one.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.98,
+        "reasoning": "The user is actively seeking tool recommendations to automate their social media workflow, explicitly mentioning a budget and a need for a solution to their productivity issues.",
+        "business_relevance": "This post represents a high-quality lead for SignalForge, as the user is in the market for a solution that our platform likely provides, with a clear budget and stated pain points.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 62.65,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 39.52,
+          "engagement_score": 3.13,
+          "signal_boost": 20.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-08T08:20:13+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_002-17",
+      "review_status": "pending",
+      "reviewer_action": "",
+      "final_draft": "It's a very common challenge to move beyond generic AI output, especially when aiming for platform-specific content like Reddit and a distinct brand voice. While general-purpose tools like ChatGPT and Jasper are powerful, they often require significant prompting and fine-tuning to truly capture a unique style and avoid sounding robotic. For your specific needs \u2013 understanding brand voice, analyzing trending topics, and drafting Reddit-appropriate replies \u2013 you'll want to look for tools that offer robust customization options. This often involves: 1. **Fine-tuning capabilities:** The ability to train the AI on your existing content, brand guidelines, and past successful Reddit interactions. This is crucial for embedding your unique voice. 2. **Advanced context windows/memory:** Tools that can retain a deeper understanding of ongoing conversations and your brand's history will perform better for drafting relevant replies. 3. **Integration with data sources:** For trending topics, look for platforms that integrate with social listening tools or have built-in capabilities to analyze real-time platform data. 4. **Workflow automation:** Beyond just generation, consider tools that help with the entire workflow, from topic identification to drafting and even scheduling, while still allowing for human oversight. Many newer AI platforms are focusing on these niche applications, moving beyond general-purpose content generation. The key is to find one that allows you to 'teach' it your specific style and context, rather than just giving it a one-off prompt.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_002",
+        "title": "What's the best AI tool for content creation in 2025?",
+        "body": "I've tried ChatGPT and Jasper but they both feel generic. I need something that understands my brand voice and can generate Reddit-appropriate content that doesn't sound like a bot. Specifically looking for something that can analyze trending topics and draft replies. Has anyone found a tool that actually works well for this? Willing to pay for quality.",
+        "url": "https://www.reddit.com/r/artificial/comments/mock002/best_ai_tool_content",
+        "score": 89,
+        "author": "contentcreator_ai",
+        "subreddit": "artificial",
+        "created_utc": 1714390000.0,
+        "num_comments": 45,
+        "opportunity_signals": [
+          "recommendation_request"
+        ]
+      },
+      "draft": {
+        "draft": "It's a very common challenge to move beyond generic AI output, especially when aiming for platform-specific content like Reddit and a distinct brand voice. While general-purpose tools like ChatGPT and Jasper are powerful, they often require significant prompting and fine-tuning to truly capture a unique style and avoid sounding robotic. For your specific needs \u2013 understanding brand voice, analyzing trending topics, and drafting Reddit-appropriate replies \u2013 you'll want to look for tools that offer robust customization options. This often involves: 1. **Fine-tuning capabilities:** The ability to train the AI on your existing content, brand guidelines, and past successful Reddit interactions. This is crucial for embedding your unique voice. 2. **Advanced context windows/memory:** Tools that can retain a deeper understanding of ongoing conversations and your brand's history will perform better for drafting relevant replies. 3. **Integration with data sources:** For trending topics, look for platforms that integrate with social listening tools or have built-in capabilities to analyze real-time platform data. 4. **Workflow automation:** Beyond just generation, consider tools that help with the entire workflow, from topic identification to drafting and even scheduling, while still allowing for human oversight. Many newer AI platforms are focusing on these niche applications, moving beyond general-purpose content generation. The key is to find one that allows you to 'teach' it your specific style and context, rather than just giving it a one-off prompt.",
+        "tone": "expert",
+        "cta": "",
+        "reasoning": "The reply adopts an expert tone to address the user's specific pain points (generic AI, brand voice, trending topics, Reddit content). It provides actionable advice on what features to look for in tools, rather than naming specific products, aligning with the rule to solve the user's problem first and avoid hard selling, especially with no product knowledge."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "It's a very common challenge to move beyond generic AI output, especially when aiming for platform-specific content like Reddit and a distinct brand voice. While general-purpose tools like ChatGPT and Jasper are powerful, they often require significant prompting and fine-tuning to truly capture a unique style and avoid sounding robotic. For your specific needs \u2013 understanding brand voice, analyzing trending topics, and drafting Reddit-appropriate replies \u2013 you'll want to look for tools that offer robust customization options. This often involves: 1. **Fine-tuning capabilities:** The ability to train the AI on your existing content, brand guidelines, and past successful Reddit interactions. This is crucial for embedding your unique voice. 2. **Advanced context windows/memory:** Tools that can retain a deeper understanding of ongoing conversations and your brand's history will perform better for drafting relevant replies. 3. **Integration with data sources:** For trending topics, look for platforms that integrate with social listening tools or have built-in capabilities to analyze real-time platform data. 4. **Workflow automation:** Beyond just generation, consider tools that help with the entire workflow, from topic identification to drafting and even scheduling, while still allowing for human oversight. Many newer AI platforms are focusing on these niche applications, moving beyond general-purpose content generation. The key is to find one that allows you to 'teach' it your specific style and context, rather than just giving it a one-off prompt.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.98,
+        "reasoning": "The user is explicitly asking for 'the best AI tool for content creation,' mentions specific desired features, and states they are 'willing to pay for quality,' indicating a strong intent to purchase a new solution.",
+        "business_relevance": "This post represents a high-value lead. The user is actively seeking an AI content creation tool with features directly relevant to social media engagement (Reddit-appropriate content, trending topic analysis, drafting replies), which SignalForge may offer or integrate with.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 50.45,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 39.52,
+          "engagement_score": 5.93,
+          "signal_boost": 5.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-08T08:20:13+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_005-16",
+      "review_status": "pending",
+      "reviewer_action": "",
+      "final_draft": "I definitely hear you on those pain points \u2013 managing Reddit engagement at scale is a beast, and those bottlenecks are incredibly common for agencies. It sounds like you're doing a lot of heavy lifting manually. For **discovery**, since Hootsuite and Buffer don't quite cut it for Reddit's unique structure, a more targeted approach is often needed. Beyond general keyword monitoring, consider deep-diving into Reddit's native search with advanced operators for specific subreddits, flairs, or even timeframes. Setting up custom multireddits for each client's niche can also dramatically reduce monitoring time by aggregating relevant discussions into one feed. When it comes to **crafting non-corporate responses**, the key is genuine immersion. Encourage your team to spend time \"lurking\" in target subreddits to internalize the community's tone, humor, and unspoken rules. Responses that add value, answer questions, or genuinely participate tend to resonate far more than anything that feels like marketing copy. **Tracking replies** is largely a workflow challenge. Many agencies I know create a simple internal system, often a shared spreadsheet or a project management tool like Asana or Trello, where they log thread IDs, client, status (replied, monitoring, etc.), and key dates. Reddit's \"saved\" posts feature can also be a quick bookmark for threads you're actively engaging with. Finally, **measuring ROI on engagement** on Reddit is usually a long-game play focused on brand sentiment, community building, and driving qualified traffic rather than direct conversions. Define clear KPIs upfront: are you aiming for increased brand mentions, upvotes, comments, or specific inbound clicks (always use UTMs!)? It's about demonstrating value and influence over time. Hope some of these workflow ideas help ease the load!",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_005",
+        "title": "Our agency's social media pain points \u2014 a rant",
+        "body": "I know this gets posted a lot but I genuinely need to vent. We manage 12 client accounts across Reddit, Twitter, Instagram, and LinkedIn. The biggest bottlenecks are: 1) Finding relevant conversations to join (takes 2hrs/day), 2) Writing responses that don't sound corporate, 3) Tracking which threads we've already replied to, 4) Measuring ROI on our engagement efforts. We've tried Hootsuite and Buffer but they don't solve the discovery problem. If anyone has built a custom workflow or found a tool that handles Reddit-specific engagement, I'm all ears. This is becoming unsustainable.",
+        "url": "https://www.reddit.com/r/digitalmarketing/comments/mock005/agency_pain_points",
+        "score": 134,
+        "author": "agencyowner2025",
+        "subreddit": "digitalmarketing",
+        "created_utc": 1714375000.0,
+        "num_comments": 67,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ]
+      },
+      "draft": {
+        "draft": "I definitely hear you on those pain points \u2013 managing Reddit engagement at scale is a beast, and those bottlenecks are incredibly common for agencies. It sounds like you're doing a lot of heavy lifting manually. For **discovery**, since Hootsuite and Buffer don't quite cut it for Reddit's unique structure, a more targeted approach is often needed. Beyond general keyword monitoring, consider deep-diving into Reddit's native search with advanced operators for specific subreddits, flairs, or even timeframes. Setting up custom multireddits for each client's niche can also dramatically reduce monitoring time by aggregating relevant discussions into one feed. When it comes to **crafting non-corporate responses**, the key is genuine immersion. Encourage your team to spend time \"lurking\" in target subreddits to internalize the community's tone, humor, and unspoken rules. Responses that add value, answer questions, or genuinely participate tend to resonate far more than anything that feels like marketing copy. **Tracking replies** is largely a workflow challenge. Many agencies I know create a simple internal system, often a shared spreadsheet or a project management tool like Asana or Trello, where they log thread IDs, client, status (replied, monitoring, etc.), and key dates. Reddit's \"saved\" posts feature can also be a quick bookmark for threads you're actively engaging with. Finally, **measuring ROI on engagement** on Reddit is usually a long-game play focused on brand sentiment, community building, and driving qualified traffic rather than direct conversions. Define clear KPIs upfront: are you aiming for increased brand mentions, upvotes, comments, or specific inbound clicks (always use UTMs!)? It's about demonstrating value and influence over time. Hope some of these workflow ideas help ease the load!",
+        "tone": "expert",
+        "cta": "",
+        "reasoning": "The reply directly addresses all the user's pain points with actionable, expert-level advice. It adopts a helpful, understanding tone while providing concrete strategies for discovery, content, tracking, and ROI measurement, without mentioning any specific product due to the lack of product knowledge."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "I definitely hear you on those pain points \u2013 managing Reddit engagement at scale is a beast, and those bottlenecks are incredibly common for agencies. It sounds like you're doing a lot of heavy lifting manually. For **discovery**, since Hootsuite and Buffer don't quite cut it for Reddit's unique structure, a more targeted approach is often needed. Beyond general keyword monitoring, consider deep-diving into Reddit's native search with advanced operators for specific subreddits, flairs, or even timeframes. Setting up custom multireddits for each client's niche can also dramatically reduce monitoring time by aggregating relevant discussions into one feed. When it comes to **crafting non-corporate responses**, the key is genuine immersion. Encourage your team to spend time \"lurking\" in target subreddits to internalize the community's tone, humor, and unspoken rules. Responses that add value, answer questions, or genuinely participate tend to resonate far more than anything that feels like marketing copy. **Tracking replies** is largely a workflow challenge. Many agencies I know create a simple internal system, often a shared spreadsheet or a project management tool like Asana or Trello, where they log thread IDs, client, status (replied, monitoring, etc.), and key dates. Reddit's \"saved\" posts feature can also be a quick bookmark for threads you're actively engaging with. Finally, **measuring ROI on engagement** on Reddit is usually a long-game play focused on brand sentiment, community building, and driving qualified traffic rather than direct conversions. Define clear KPIs upfront: are you aiming for increased brand mentions, upvotes, comments, or specific inbound clicks (always use UTMs!)? It's about demonstrating value and influence over time. Hope some of these workflow ideas help ease the load!",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.95,
+        "reasoning": "The user, an agency, details significant social media engagement pain points and explicitly asks for recommendations for a tool that handles Reddit-specific engagement, indicating an active search for a solution.",
+        "business_relevance": "This post represents a strong lead. The user is an agency with clear pain points that SignalForge can address, and they are actively seeking a tool, making them a high-value prospect for acquisition.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 57.73,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 38.8,
+          "engagement_score": 8.93,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-08T08:20:13+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_009-15",
+      "review_status": "pending",
+      "reviewer_action": "",
+      "final_draft": "Scaling content moderation is definitely one of the biggest challenges for growing communities, and 500 posts/day with a 3-person team is tough! It's a common bottleneck, so you're not alone in facing this. For AI-powered moderation, think of it as a force multiplier rather than a full replacement. It's excellent for triaging: flagging content that matches patterns of spam, hate speech, or other common violations. This significantly reduces the sheer volume your human mods have to review, freeing them up to focus on the nuanced, complex cases that truly require human judgment. Look for tools that offer configurable rules and machine learning models that can learn from your community's specific context. Effective automod rules are absolutely key. Start with clear, objective triggers for your most common and egregious violations (e.g., specific forbidden words, links to known spam sites, excessive self-promotion). Don't try to catch everything at once; iterate and refine your rules based on what your community is actually posting and what's slipping through. Use them to enforce your most basic, non-negotiable community guidelines automatically. For training your community moderators, invest in clear, comprehensive guidelines. These should cover not just *what* is allowed/disallowed, but also *why*, and provide examples. Regular training sessions to discuss edge cases, policy updates, and best practices are crucial. Empower them with clear escalation paths for difficult decisions and efficient tools to manage their queues. Balancing free speech with safety is indeed delicate. The most important thing here is transparency and consistent enforcement of your community guidelines. Clearly define what is and isn't allowed, and communicate these expectations upfront. When making moderation decisions, always refer back to these published guidelines. Prioritize creating a safe and welcoming environment, but ensure members understand the boundaries and the rationale behind them. Consider a tiered moderation framework: Automod catches the obvious, AI flags high-risk content for human review, and your human moderators handle the complex, nuanced cases, appeals, and community engagement. This workflow can significantly improve efficiency as you grow.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_009",
+        "title": "How do you handle content moderation at scale?",
+        "body": "We're growing our community platform and content moderation is becoming a real challenge. Currently using a mix of keyword filters and manual review but it doesn't scale. Looking for advice on AI-powered moderation tools, setting up effective automod rules, training community moderators, and balancing free speech with safety. We're seeing about 500 new posts/day now and our 3-person mod team can't keep up. Any frameworks or tools you'd recommend?",
+        "url": "https://www.reddit.com/r/community/comments/mock009/content_moderation_scale",
+        "score": 78,
+        "author": "community_builder",
+        "subreddit": "community",
+        "created_utc": 1714355000.0,
+        "num_comments": 42,
+        "opportunity_signals": [
+          "recommendation_request",
+          "bottleneck"
+        ]
+      },
+      "draft": {
+        "draft": "Scaling content moderation is definitely one of the biggest challenges for growing communities, and 500 posts/day with a 3-person team is tough! It's a common bottleneck, so you're not alone in facing this. For AI-powered moderation, think of it as a force multiplier rather than a full replacement. It's excellent for triaging: flagging content that matches patterns of spam, hate speech, or other common violations. This significantly reduces the sheer volume your human mods have to review, freeing them up to focus on the nuanced, complex cases that truly require human judgment. Look for tools that offer configurable rules and machine learning models that can learn from your community's specific context. Effective automod rules are absolutely key. Start with clear, objective triggers for your most common and egregious violations (e.g., specific forbidden words, links to known spam sites, excessive self-promotion). Don't try to catch everything at once; iterate and refine your rules based on what your community is actually posting and what's slipping through. Use them to enforce your most basic, non-negotiable community guidelines automatically. For training your community moderators, invest in clear, comprehensive guidelines. These should cover not just *what* is allowed/disallowed, but also *why*, and provide examples. Regular training sessions to discuss edge cases, policy updates, and best practices are crucial. Empower them with clear escalation paths for difficult decisions and efficient tools to manage their queues. Balancing free speech with safety is indeed delicate. The most important thing here is transparency and consistent enforcement of your community guidelines. Clearly define what is and isn't allowed, and communicate these expectations upfront. When making moderation decisions, always refer back to these published guidelines. Prioritize creating a safe and welcoming environment, but ensure members understand the boundaries and the rationale behind them. Consider a tiered moderation framework: Automod catches the obvious, AI flags high-risk content for human review, and your human moderators handle the complex, nuanced cases, appeals, and community engagement. This workflow can significantly improve efficiency as you grow.",
+        "tone": "expert",
+        "cta": "",
+        "reasoning": "The reply adopts an expert tone by offering structured, actionable advice on each point raised by the user (AI, automod, training, balancing free speech). It validates the user's problem and provides general best practices without mentioning specific products, aligning with the lack of retrieved product knowledge and the 'solve the problem first' rule."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "Scaling content moderation is definitely one of the biggest challenges for growing communities, and 500 posts/day with a 3-person team is tough! It's a common bottleneck, so you're not alone in facing this. For AI-powered moderation, think of it as a force multiplier rather than a full replacement. It's excellent for triaging: flagging content that matches patterns of spam, hate speech, or other common violations. This significantly reduces the sheer volume your human mods have to review, freeing them up to focus on the nuanced, complex cases that truly require human judgment. Look for tools that offer configurable rules and machine learning models that can learn from your community's specific context. Effective automod rules are absolutely key. Start with clear, objective triggers for your most common and egregious violations (e.g., specific forbidden words, links to known spam sites, excessive self-promotion). Don't try to catch everything at once; iterate and refine your rules based on what your community is actually posting and what's slipping through. Use them to enforce your most basic, non-negotiable community guidelines automatically. For training your community moderators, invest in clear, comprehensive guidelines. These should cover not just *what* is allowed/disallowed, but also *why*, and provide examples. Regular training sessions to discuss edge cases, policy updates, and best practices are crucial. Empower them with clear escalation paths for difficult decisions and efficient tools to manage their queues. Balancing free speech with safety is indeed delicate. The most important thing here is transparency and consistent enforcement of your community guidelines. Clearly define what is and isn't allowed, and communicate these expectations upfront. When making moderation decisions, always refer back to these published guidelines. Prioritize creating a safe and welcoming environment, but ensure members understand the boundaries and the rationale behind them. Consider a tiered moderation framework: Automod catches the obvious, AI flags high-risk content for human review, and your human moderators handle the complex, nuanced cases, appeals, and community engagement. This workflow can significantly improve efficiency as you grow.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.95,
+        "reasoning": "The user explicitly states they are 'Looking for advice on AI-powered moderation tools' and asks 'Any frameworks or tools you'd recommend?', clearly indicating an active search for solutions and products.",
+        "business_relevance": "This post represents a direct sales lead. The user is actively seeking tools and frameworks for content moderation, which SignalForge or its partners might offer, presenting an opportunity to introduce relevant solutions.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 53.0,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 38.8,
+          "engagement_score": 5.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-08T08:20:13+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_011-17",
+      "review_status": "pending",
+      "reviewer_action": "",
+      "final_draft": "I completely understand your frustration. You've hit on a really critical point about Reddit that many social media management tools often miss: it's fundamentally different from platforms like Twitter or Facebook. Treating it as just another channel for scheduled posts overlooks the deep community culture, the need for authenticity, and the importance of genuine engagement. You're absolutely not asking for too much; these are essential features for anyone serious about engaging effectively on Reddit. The challenge is that Reddit's API and its unique community dynamics make it difficult to build a one-size-fits-all solution that also caters to the more structured, broadcast-oriented nature of other platforms. For keyword monitoring and alerts, some users piece together solutions using Reddit's native search combined with custom RSS feeds, or by building multireddits to keep an eye on specific communities. However, truly understanding subreddit culture and drafting appropriate responses still heavily relies on human oversight and a deep understanding of each community's nuances. Tracking engagement often comes down to manual logging or leveraging Reddit's own user history features, which isn't ideal for large-scale operations. It's a definite gap in the market, and there's a growing recognition that Reddit requires a specialized approach rather than just being an add-on to existing tools. Keep an eye out for more focused solutions, as the demand for smarter Reddit engagement tools is certainly increasing.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_011",
+        "title": "Frustrated with social media scheduling tools \u2014 none of them support Reddit well",
+        "body": "I've tested about 8 different social media management tools this month and NONE of them handle Reddit properly. They all treat it like Twitter \u2014 just schedule a post and forget. But Reddit requires actual conversation, understanding community norms, and authentic engagement. What I need: ability to monitor keywords across specific subreddits, get alerts when someone asks a question I can help with, draft responses that match the subreddit's culture, and track my engagement history. Am I asking for too much? Is there anything in development that addresses this gap?",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock011/scheduling_tools_reddit",
+        "score": 201,
+        "author": "social_strategist",
+        "subreddit": "socialmedia",
+        "created_utc": 1714345000.0,
+        "num_comments": 89,
+        "opportunity_signals": [
+          "help_request",
+          "pain_point"
+        ]
+      },
+      "draft": {
+        "draft": "I completely understand your frustration. You've hit on a really critical point about Reddit that many social media management tools often miss: it's fundamentally different from platforms like Twitter or Facebook. Treating it as just another channel for scheduled posts overlooks the deep community culture, the need for authenticity, and the importance of genuine engagement. You're absolutely not asking for too much; these are essential features for anyone serious about engaging effectively on Reddit. The challenge is that Reddit's API and its unique community dynamics make it difficult to build a one-size-fits-all solution that also caters to the more structured, broadcast-oriented nature of other platforms. For keyword monitoring and alerts, some users piece together solutions using Reddit's native search combined with custom RSS feeds, or by building multireddits to keep an eye on specific communities. However, truly understanding subreddit culture and drafting appropriate responses still heavily relies on human oversight and a deep understanding of each community's nuances. Tracking engagement often comes down to manual logging or leveraging Reddit's own user history features, which isn't ideal for large-scale operations. It's a definite gap in the market, and there's a growing recognition that Reddit requires a specialized approach rather than just being an add-on to existing tools. Keep an eye out for more focused solutions, as the demand for smarter Reddit engagement tools is certainly increasing.",
+        "tone": "expert",
+        "cta": "",
+        "reasoning": "The reply addresses the user's pain points directly and validates their frustration, establishing an expert tone. It explains *why* Reddit is different and offers conceptual solutions to their stated needs (monitoring, alerts, drafting, tracking) without mentioning any specific product, adhering to the 'no product knowledge' constraint. The tone is knowledgeable and helpful, and the CTA is omitted as no product-specific action can be offered."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "I completely understand your frustration. You've hit on a really critical point about Reddit that many social media management tools often miss: it's fundamentally different from platforms like Twitter or Facebook. Treating it as just another channel for scheduled posts overlooks the deep community culture, the need for authenticity, and the importance of genuine engagement. You're absolutely not asking for too much; these are essential features for anyone serious about engaging effectively on Reddit. The challenge is that Reddit's API and its unique community dynamics make it difficult to build a one-size-fits-all solution that also caters to the more structured, broadcast-oriented nature of other platforms. For keyword monitoring and alerts, some users piece together solutions using Reddit's native search combined with custom RSS feeds, or by building multireddits to keep an eye on specific communities. However, truly understanding subreddit culture and drafting appropriate responses still heavily relies on human oversight and a deep understanding of each community's nuances. Tracking engagement often comes down to manual logging or leveraging Reddit's own user history features, which isn't ideal for large-scale operations. It's a definite gap in the market, and there's a growing recognition that Reddit requires a specialized approach rather than just being an add-on to existing tools. Keep an eye out for more focused solutions, as the demand for smarter Reddit engagement tools is certainly increasing.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.95,
+        "reasoning": "The user details specific functionalities they need in a social media management tool and explicitly asks if any solutions exist or are in development that address this gap, indicating an active search for a product.",
+        "business_relevance": "This post represents a high-quality lead. The user is in an active evaluation phase, clearly articulates their pain points and desired features, and is looking to acquire a new tool that fits their specific needs for Reddit engagement.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 73.2,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 38.8,
+          "engagement_score": 13.4,
+          "signal_boost": 11.0,
+          "urgency_boost": 10.0
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-08T08:20:13+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
     }
   ]
 }

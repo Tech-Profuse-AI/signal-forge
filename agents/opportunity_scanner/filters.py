@@ -183,7 +183,7 @@ class OpportunityFilter:
             return "bot_spam"
 
         # 5. Score below threshold
-        if post.get("score", 0) < self.config.minimum_score:
+        if not self._passes_score_threshold(post):
             return f"score_below_{self.config.minimum_score}"
 
         # 6. Blacklisted subreddit
@@ -229,6 +229,28 @@ class OpportunityFilter:
         """Check subreddit against the blacklist (case-insensitive)."""
         sub = post.get("subreddit", "").lower()
         return sub in [s.lower() for s in self.config.blacklisted_subreddits]
+
+    def _passes_score_threshold(self, post: Dict[str, Any]) -> bool:
+        """Allow long-form Quora posts through when no upvote count is available."""
+        score = post.get("score", 0)
+        if score >= self.config.minimum_score:
+            return True
+
+        body = (post.get("body", "") or "").strip()
+        if (
+            post.get("platform", "").lower() == "quora"
+            and score == 0
+            and len(body) > 200
+        ):
+            logger.info(
+                "Applying Quora zero-score fallback [%s] %s — body_len=%d",
+                post.get("id", "?"),
+                post.get("title", "")[:50],
+                len(body),
+            )
+            return True
+
+        return False
 
     # ── Keep-signal detection ─────────────────────────────────────────
 

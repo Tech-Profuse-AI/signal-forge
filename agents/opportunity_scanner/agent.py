@@ -28,8 +28,9 @@ class OpportunityScannerAgent:
 
     Usage::
 
-        agent = OpportunityScannerAgent()           # mock mode
-        agent = OpportunityScannerAgent(             # live mode
+        agent = OpportunityScannerAgent(force_mock=True)  # mock mode
+        agent = OpportunityScannerAgent()                 # live RSS fallback
+        agent = OpportunityScannerAgent(                  # live PRAW provider
             reddit_provider=my_reddit_provider,
         )
         opportunities = agent.scan(["social media tool", "automation"])
@@ -44,8 +45,12 @@ class OpportunityScannerAgent:
         keywords: Optional[List[str]] = None,
     ) -> None:
         # ── Sub-components ────────────────────────────────────────────
-        self.scanner = RedditScanner(
+        active_reddit_provider = self._resolve_reddit_provider(
             reddit_provider=reddit_provider,
+            force_mock=force_mock,
+        )
+        self.scanner = RedditScanner(
+            reddit_provider=active_reddit_provider,
             force_mock=force_mock,
         )
         # In mock mode the post IDs are always the same fixed set from the
@@ -66,6 +71,13 @@ class OpportunityScannerAgent:
         ]
         self.stats = {"fetched": 0, "deduped": 0, "filtered": 0, "approved": 0}
 
+        provider_name = (
+            type(active_reddit_provider).__name__
+            if active_reddit_provider is not None
+            else "mock"
+        )
+        logger.info("OpportunityScannerAgent Reddit provider active - %s", provider_name)
+
         logger.info(
             "OpportunityScannerAgent ready — mode=%s, cache=%d seen",
             self.scanner.mode,
@@ -73,6 +85,36 @@ class OpportunityScannerAgent:
         )
 
     # ── Public API ────────────────────────────────────────────────────
+
+    @staticmethod
+    def _resolve_reddit_provider(
+        reddit_provider: Optional[Any],
+        force_mock: bool,
+    ) -> Optional[Any]:
+        if force_mock or reddit_provider is not None:
+            return reddit_provider
+
+        try:
+            from providers.reddit_rss_provider import RedditRSSProvider
+
+            provider = RedditRSSProvider(mode="live")
+        except ImportError as exc:
+            logger.warning(
+                "RedditRSSProvider unavailable; falling back to mock Reddit data: %s",
+                exc,
+            )
+            return None
+        except Exception as exc:
+            logger.warning(
+                "RedditRSSProvider fallback failed; falling back to mock Reddit data: %s",
+                exc,
+            )
+            return None
+
+        logger.info(
+            "RedditProvider credentials missing; using RedditRSSProvider fallback"
+        )
+        return provider
 
     def scan(
         self,

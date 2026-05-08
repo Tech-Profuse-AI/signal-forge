@@ -229,7 +229,11 @@ class MediumProvider:
         # Content / summary
         body = ""
         if hasattr(entry, "content") and entry.content:
-            body = entry.content[0].get("value", "")
+            first_content = entry.content[0]
+            if isinstance(first_content, dict):
+                body = first_content.get("value", "") or ""
+            else:
+                body = getattr(first_content, "value", "") or ""
         if not body:
             body = getattr(entry, "summary", "") or ""
 

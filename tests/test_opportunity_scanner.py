@@ -17,6 +17,7 @@ import os
 import sys
 import tempfile
 import logging
+from datetime import datetime, timedelta, timezone
 
 # Ensure project root is on the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -188,6 +189,29 @@ def test_cache_manager():
 # 4. RedditScanner (mock mode)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def test_cache_manager_expires_old_entries():
+    """CacheManager drops entries older than max_age_days when loading."""
+    from agents.opportunity_scanner.cache_manager import CacheManager
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cache_path = os.path.join(tmpdir, "seen_posts.json")
+        now = datetime.now(timezone.utc)
+        with open(cache_path, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "fresh_post": (now - timedelta(days=2)).isoformat(),
+                    "stale_post": (now - timedelta(days=8)).isoformat(),
+                },
+                fh,
+            )
+
+        cache = CacheManager(cache_dir=tmpdir, max_age_days=7)
+
+        assert cache.has_seen("fresh_post"), "Fresh entry should be retained"
+        assert not cache.has_seen("stale_post"), "Stale entry should expire"
+        assert cache.size == 1, "Only fresh entries should remain after load"
+
+
 def test_reddit_scanner_mock():
     """RedditScanner in mock mode loads and filters data correctly."""
     from agents.opportunity_scanner.reddit_scanner import RedditScanner
@@ -209,6 +233,10 @@ def test_reddit_scanner_mock():
     matched = scanner.scan_keywords(keywords=["automation", "workflow"])
     assert len(matched) > 0, "Should match some posts"
     print(f"  ✓ Keyword scan: {len(matched)} posts matched")
+
+    unrelated = scanner.scan_keywords(keywords=["TVK Vijay", "Stranger Things"])
+    assert unrelated == [], "Unrelated keywords should not fall back to all mock posts"
+    print("  Unrelated keyword scan returns no posts")
 
     # Auto-fallback when provider is None
     scanner2 = RedditScanner(reddit_provider=None)
@@ -311,6 +339,44 @@ def test_configurable_thresholds():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Runner
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def test_quora_zero_score_long_body_fallback(caplog):
+    """Long-form Quora posts with score=0 should bypass the score threshold."""
+    from agents.opportunity_scanner.filters import OpportunityFilter, FilterConfig
+
+    filt = OpportunityFilter(FilterConfig(minimum_score=5, minimum_body_length=50))
+    posts = [
+        {
+            "id": "qra_long_form_zero_score",
+            "platform": "quora",
+            "title": "How do I automate this workflow without a full-time team?",
+            "body": "I need help automating a repetitive process. " + ("workflow pain " * 20),
+            "score": 0,
+            "author": "Space Author",
+            "subreddit": "",
+        },
+        {
+            "id": "qra_short_zero_score",
+            "platform": "quora",
+            "title": "How do I automate this workflow without a full-time team?",
+            "body": "I need help automating this workflow quickly.",
+            "score": 0,
+            "author": "Space Author",
+            "subreddit": "",
+        },
+    ]
+
+    with caplog.at_level(logging.INFO, logger="signalforge.filters"):
+        kept = filt.filter_opportunities(posts)
+
+    kept_ids = {post["id"] for post in kept}
+    assert "qra_long_form_zero_score" in kept_ids, "Long-form zero-score Quora post should pass"
+    assert "qra_short_zero_score" not in kept_ids, "Short zero-score Quora post should still fail"
+    assert any(
+        "Applying Quora zero-score fallback [qra_long_form_zero_score]" in record.message
+        for record in caplog.records
+    ), "Expected fallback log entry for long-form zero-score Quora post"
+
 
 if __name__ == "__main__":
     print("\n" + "╔" + "═" * 58 + "╗")

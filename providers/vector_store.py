@@ -161,34 +161,35 @@ class HashEmbeddingProvider:
 
 
 class GeminiEmbeddingProvider:
-    """Gemini embedding wrapper used when credentials and SDK are available."""
-
     name = "gemini"
 
-    def __init__(
-        self,
-        api_key: str,
-        model_name: str = "models/text-embedding-004",
-    ) -> None:
-        if not api_key:
-            raise ValueError("api_key is required for Gemini embeddings")
+    def __init__(self, api_key: str, model_name: str = "models/text-embedding-004"):
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        self._genai = genai
+        self._model = model_name
 
-        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    def embed_documents(self, texts):
+        results = []
+        for text in texts:
+            result = self._genai.embed_content(
+                model=self._model,
+                content=text,
+                task_type="retrieval_document",
+            )
+            results.append(result["embedding"])
+        return results
 
-        self._embeddings = GoogleGenerativeAIEmbeddings(
-            model=model_name,
-            google_api_key=api_key,
+    def embed_query(self, text: str):
+        result = self._genai.embed_content(
+            model=self._model,
+            content=text,
+            task_type="retrieval_query",
         )
-        self._model_name = model_name
+        return result["embedding"]
 
-    def embed_documents(self, texts: Sequence[str]) -> List[List[float]]:
-        return self._embeddings.embed_documents(list(texts))
-
-    def embed_query(self, text: str) -> List[float]:
-        return self._embeddings.embed_query(text)
-
-    def __repr__(self) -> str:
-        return f"<GeminiEmbeddingProvider model='{self._model_name}'>"
+    def __repr__(self):
+        return f"<GeminiEmbeddingProvider model='{self._model}'>"
 
 
 class LocalChromaVectorStore:
@@ -210,7 +211,7 @@ class LocalChromaVectorStore:
         chunk_size: int = 700,
         chunk_overlap: int = 120,
         gemini_api_key: Optional[str] = None,
-        gemini_embedding_model: str = "models/text-embedding-004",
+        gemini_embedding_model: str = "models/text-embedding-001",
         fallback_dimensions: int = 256,
     ) -> None:
         project_root = Path(__file__).resolve().parent.parent

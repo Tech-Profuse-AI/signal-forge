@@ -204,8 +204,9 @@ class DraftingAgent:
         )
 
     def _parse_response(self, raw_response: str) -> Dict[str, str]:
-        from providers.json_utils import extract_json
-        data = extract_json(raw_response)
+        raw_response = re.sub(r"^\s*```(?:json)?\s*", "", raw_response)
+        raw_response = re.sub(r"\s*```\s*$", "", raw_response)
+        data = json.loads(raw_response)
 
         return {
             "draft": self._clean_text(str(data.get("draft", ""))),

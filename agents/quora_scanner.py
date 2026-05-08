@@ -136,6 +136,7 @@ class QuoraScannerAgent:
         self._cache = CacheManager(
             cache_dir=cache_dir,
             cache_filename=cache_filename,
+            max_age_days=7,
         )
         self._filter = OpportunityFilter(config=filter_config)
 

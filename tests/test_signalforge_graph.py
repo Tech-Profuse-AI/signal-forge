@@ -205,6 +205,54 @@ def test_full_signalforge_pipeline():
         print("  -- Full SignalForge LangGraph Pipeline PASSED --")
 
 
+def test_compliance_counts_ignore_product_knowledge_errors():
+    """Compliance counters should only reflect compliance approvals/rejections."""
+
+    class FakeComplianceAgent:
+        def validate(self, draft):
+            if draft.get("draft") == "approved":
+                return {
+                    "approved": True,
+                    "risk_level": "safe",
+                    "violations": [],
+                    "safe_draft": draft["draft"],
+                    "recommendation": "approve",
+                }
+            return {
+                "approved": False,
+                "risk_level": "reject",
+                "violations": ["hard_sell_language"],
+                "safe_draft": "safer draft",
+                "recommendation": "reject",
+            }
+
+    workflow = SignalForgeGraph.__new__(SignalForgeGraph)
+    workflow._compliance_agent = FakeComplianceAgent()
+
+    state = {
+        "opportunities": [{"id": "opp_1"}, {"id": "opp_2"}],
+        "intent_results": [{}, {}],
+        "scored_results": [{}, {}],
+        "knowledge_results": [{}, {}],
+        "draft_results": [{"draft": "approved"}, {"draft": "rejected"}],
+        "compliance_results": [],
+        "final_results": [],
+        "errors": [
+            {
+                "stage": "product_knowledge",
+                "opportunity_id": "opp_1",
+                "error": "missing context",
+            }
+        ],
+    }
+
+    result = workflow.compliance_node(state)
+
+    assert result["success_count"] == 1
+    assert result["failure_count"] == 1
+    assert result["errors"] == state["errors"]
+
+
 if __name__ == "__main__":
     print("\n+" + "=" * 58 + "+")
     print("|   SignalForge -- Phase 8 LangGraph Tests                |")
