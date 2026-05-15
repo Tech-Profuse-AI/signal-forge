@@ -16,8 +16,15 @@ from typing import Any, Dict, List, Optional
 from agents.opportunity_scanner.agent import OpportunityScannerAgent
 from agents.quora_scanner import QuoraScannerAgent
 from agents.medium_scanner import MediumScannerAgent
+from utils.dedup import dedupe_unified_exact
+from utils.query_normalizer import normalize_queries
 
 logger = logging.getLogger("signalforge.unified_scanner")
+
+
+class _NoOpDedupAgent:
+    def deduplicate(self, opportunities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return list(opportunities)
 
 
 class UnifiedScannerAgent:
@@ -45,12 +52,16 @@ class UnifiedScannerAgent:
         reddit_provider: Optional[Any] = None,
         cache_dir: Optional[str] = None,
         enable_dedup: bool = False,
+        cache_max_age_days: Optional[int] = None,
+        ephemeral_cache: bool = False,
     ) -> None:
         # ── Reddit ────────────────────────────────────────────────────
         self.reddit_scanner = OpportunityScannerAgent(
             reddit_provider=reddit_provider,
             force_mock=mock_mode,
             cache_dir=cache_dir,
+            cache_max_age_days=cache_max_age_days,
+            ephemeral_cache=ephemeral_cache,
         )
 
         # ── Quora ─────────────────────────────────────────────────────
@@ -58,6 +69,8 @@ class UnifiedScannerAgent:
             self.quora_scanner = QuoraScannerAgent(
                 force_mock=True,
                 cache_dir=cache_dir,
+                cache_max_age_days=cache_max_age_days,
+                ephemeral_cache=ephemeral_cache,
             )
         else:
             from providers.quora_provider import QuoraProvider
@@ -65,6 +78,8 @@ class UnifiedScannerAgent:
                 quora_provider=QuoraProvider(mock_mode=False),
                 force_mock=False,
                 cache_dir=cache_dir,
+                cache_max_age_days=cache_max_age_days,
+                ephemeral_cache=ephemeral_cache,
             )
 
         # ── Medium ────────────────────────────────────────────────────
@@ -72,16 +87,17 @@ class UnifiedScannerAgent:
         self.medium_scanner = MediumScannerAgent(
             mode=medium_mode,
             cache_dir=cache_dir,
+            cache_max_age_days=cache_max_age_days,
+            ephemeral_cache=ephemeral_cache,
         )
 
         # ── Optional semantic dedup ───────────────────────────────────
         self._dedup_agent = None
         if enable_dedup:
-            try:
-                from agents.semantic_dedup_agent import SemanticDedupAgent
-                self._dedup_agent = SemanticDedupAgent()
-            except Exception as exc:
-                logger.warning("SemanticDedupAgent unavailable: %s", exc)
+            logger.warning(
+                "Semantic dedup requested but disabled; using exact ID/URL dedup only"
+            )
+        self.dedup_agent = _NoOpDedupAgent()
 
         self._mock_mode = mock_mode
         logger.info(
@@ -90,7 +106,7 @@ class UnifiedScannerAgent:
             self.reddit_scanner.scanner.mode,
             self.quora_scanner.mode,
             self.medium_scanner.mode,
-            self._dedup_agent is not None,
+            "exact-id-url",
         )
 
     # ── Public API (aligned with OpportunityScannerAgent.scan) ────────
@@ -125,11 +141,18 @@ class UnifiedScannerAgent:
         unified_results: List[Dict[str, Any]] = []
         platform_counts: Dict[str, int] = {"reddit": 0, "quora": 0, "medium": 0}
         failed_platforms: List[str] = []
+        normalized_keywords = normalize_queries(keywords) if keywords else None
+        if keywords and normalized_keywords != keywords:
+            logger.info(
+                "Unified query normalization: raw=%s normalized=%s",
+                keywords,
+                normalized_keywords,
+            )
 
         # ── Reddit ────────────────────────────────────────────────────
         try:
             reddit_results = self.reddit_scanner.scan(
-                keywords=keywords,
+                keywords=normalized_keywords,
                 limit_per_keyword=limit_per_keyword,
                 subreddit=subreddit,
                 time_filter=time_filter,
@@ -143,7 +166,7 @@ class UnifiedScannerAgent:
         # ── Quora ─────────────────────────────────────────────────────
         try:
             quora_results = self.quora_scanner.scan(
-                keywords=keywords,
+                keywords=normalized_keywords,
                 limit_per_keyword=limit_per_keyword,
             )
             unified_results.extend(quora_results)
@@ -155,7 +178,7 @@ class UnifiedScannerAgent:
         # ── Medium ────────────────────────────────────────────────────
         try:
             medium_results = self.medium_scanner.scan(
-                keywords=keywords,
+                keywords=normalized_keywords,
                 limit_per_keyword=limit_per_keyword,
             )
             unified_results.extend(medium_results)
@@ -172,12 +195,14 @@ class UnifiedScannerAgent:
         )
 
         # ── Optional semantic dedup ───────────────────────────────────
-        if self._dedup_agent is not None:
-            try:
-                unified_results = self._dedup_agent.deduplicate(unified_results)
-                logger.info("Post-dedup count: %d", len(unified_results))
-            except Exception as exc:
-                logger.warning("Semantic dedup failed (skipped): %s", exc)
+        before_exact = len(unified_results)
+        unified_results = dedupe_unified_exact(unified_results, logger=logger)
+        logger.info(
+            "Unified exact dedup stage: input=%d kept=%d removed=%d",
+            before_exact,
+            len(unified_results),
+            before_exact - len(unified_results),
+        )
 
         return unified_results
 

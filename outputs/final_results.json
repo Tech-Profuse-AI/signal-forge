@@ -1,44 +1,356 @@
 {
-  "query": "Steve Harrington",
+  "query": "AI workflow automation",
   "mode": "live",
-  "timestamp": "2026-05-08T11:16:19+00:00",
-  "elapsed_seconds": 192.34,
+  "timestamp": "2026-05-15T15:28:03+00:00",
+  "elapsed_seconds": 233.25,
   "summary": {
-    "total_opportunities": 0,
-    "processed": 0,
-    "approved": 0,
-    "review_queue": 139,
-    "slack_sent": 0,
+    "total_opportunities": 4,
+    "processed": 4,
+    "approved": 4,
+    "review_queue": 295,
+    "slack_sent": 4,
+    "published_count": 0,
+    "manual_count": 0,
+    "publish_failed": 0,
     "failed": 0,
     "source_metrics": {
       "reddit": {
-        "fetched": 25,
+        "fetched": 88,
         "deduped": 25,
-        "filtered": 5,
-        "approved": 5
+        "filtered": 0,
+        "approved": 0
       },
       "quora": {
-        "fetched": 5,
-        "deduped": 5,
-        "filtered": 5,
-        "approved": 5
+        "fetched": 20,
+        "deduped": 0,
+        "filtered": 0,
+        "approved": 0
       },
       "medium": {
-        "fetched": 10,
-        "deduped": 10,
-        "filtered": 2,
-        "approved": 0
+        "fetched": 37,
+        "deduped": 19,
+        "filtered": 8,
+        "approved": 6
       }
     }
   },
-  "approved_items": [],
+  "approved_items": [
+    {
+      "opportunity": {
+        "id": "medium_38b5d80690",
+        "platform": "medium",
+        "title": "Best Budget Laptop for Machine Learning in 2026 (That Won’t Freeze During Training)",
+        "body": "Stop wasting money on underpowered laptops that struggle with TensorFlow, PyTorch and real ML projects. Continue reading on Medium »",
+        "url": "https://medium.com/@mumbamweni3/best-budget-laptop-for-machine-learning-in-2026-that-wont-freeze-during-training-1e6914ca352e",
+        "url_valid": true,
+        "score": 50,
+        "author": "Mumbamweni",
+        "tags": [
+          "productivity",
+          "artificial-intelligence",
+          "programming",
+          "technology",
+          "machine-learning"
+        ],
+        "published_at": "Fri, 15 May 2026 15:19:08 GMT",
+        "opportunity_signals": [
+          "problem_intent",
+          "automation_need"
+        ]
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.95,
+        "reasoning": "The user is explicitly asking for recommendations for the 'Best Budget Laptop' for machine learning, indicating an active search for a product to purchase to solve current performance issues.",
+        "business_relevance": "While not directly related to social media engagement tools, this post reveals a tech-savvy user actively seeking solutions to workflow pain, which can inform market understanding of potential user segments and broader tech trends.",
+        "recommended_action": "monitor"
+      },
+      "score": {
+        "priority_score": 42.13,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 38.8,
+          "engagement_score": 3.33,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "knowledge": {
+        "relevant_context": [
+          {
+            "content": "- Tracks engagement metrics to measure ROI on community participation",
+            "source": "knowledge/product_docs/use_cases.md"
+          },
+          {
+            "content": "**How SignalForge helps:** - Identifies buying-intent signals in posts where users are actively evaluating solutions - Detects competitor mentions and churn risk conversations - Scores opportunities by conversion likelihood - Provides context-aware response drafts that position your product helpfully",
+            "source": "knowledge/product_docs/use_cases.md"
+          },
+          {
+            "content": ". When someone posts asking for workflow automation advice, SignalForge detects the buying intent, retrieves relevant product knowledge, and drafts a helpful response that shares genuine advice while naturally mentioning how similar teams have solved this problem.",
+            "source": "knowledge/product_docs/use_cases.md"
+          }
+        ],
+        "summary": "**How SignalForge helps:** - Identifies buying-intent signals in posts where users are actively evaluating solutions - Detects competitor mentions and churn risk conversations - Scores opportunities by conversion likelihood - Provides context-aware response drafts that position your product helpfully - Tracks engagement metrics to measure ROI on community participation When someone posts asking for workflow automation advice, SignalForge detects the buying intent, retrieves relevant product knowledge, and drafts a helpful response that shares genuine advice while naturally mentioning how similar teams have solved this problem.",
+        "sources": [
+          "knowledge/product_docs/use_cases.md"
+        ]
+      },
+      "draft": {
+        "draft": "It's a very common pain point to have a laptop struggle or even freeze with serious machine learning workloads. For anyone looking for a budget-friendly machine that can handle TensorFlow or PyTorch effectively, the GPU is absolutely paramount. Prioritize an NVIDIA card with a generous amount of VRAM – 16GB or more is a solid baseline for deep learning projects, enabling efficient CUDA operations. Sufficient RAM is also critical; 32GB is ideal to prevent data bottlenecks, especially with larger datasets. Finally, robust cooling cannot be overstated. A powerful GPU will quickly thermal throttle without adequate heat dissipation, directly leading to those frustrating freezes. Look for models known for their effective thermal solutions, even if it means a slightly thicker chassis. While CPU and fast NVMe SSDs are important, they generally come secondary to a capable GPU and ample RAM for most deep learning tasks.",
+        "tone": "expert",
+        "cta": "",
+        "reasoning": "The reply directly addresses the user's implied problem of finding a budget-friendly ML laptop that won't freeze. It provides expert, actionable advice on key hardware components (GPU, RAM, cooling) essential for machine learning, aligning with the specified expert tone and solving the user's problem first."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "It's a very common pain point to have a laptop struggle or even freeze with serious machine learning workloads. For anyone looking for a budget-friendly machine that can handle TensorFlow or PyTorch effectively, the GPU is absolutely paramount. Prioritize an NVIDIA card with a generous amount of VRAM – 16GB or more is a solid baseline for deep learning projects, enabling efficient CUDA operations. Sufficient RAM is also critical; 32GB is ideal to prevent data bottlenecks, especially with larger datasets. Finally, robust cooling cannot be overstated. A powerful GPU will quickly thermal throttle without adequate heat dissipation, directly leading to those frustrating freezes. Look for models known for their effective thermal solutions, even if it means a slightly thicker chassis. While CPU and fast NVMe SSDs are important, they generally come secondary to a capable GPU and ample RAM for most deep learning tasks.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "review_state": "paused"
+    },
+    {
+      "opportunity": {
+        "id": "medium_d370082f65",
+        "platform": "medium",
+        "title": "Stop Judging Your Music Too Early (It’s Killing Your Best Ideas)",
+        "body": "One of the fastest ways to destroy creativity as a music producer is judging your ideas too early. Continue reading on Sound Upgrade »",
+        "url": "https://medium.com/sound-upgrade/stop-judging-your-music-too-early-its-killing-your-best-ideas-92d0076fb361",
+        "url_valid": true,
+        "score": 50,
+        "author": "Matteo De Micheli",
+        "tags": [
+          "self-improvement",
+          "music-production",
+          "productivity",
+          "creativity",
+          "songwriting"
+        ],
+        "published_at": "Fri, 15 May 2026 15:17:06 GMT",
+        "opportunity_signals": [
+          "automation_need"
+        ]
+      },
+      "intent": {
+        "intent": "problem_intent",
+        "confidence": 0.75,
+        "reasoning": "The post highlights a significant workflow pain point for music producers related to premature judgment destroying creativity, which aligns with problems that tools facilitating creative processes and content management can help solve. The 'automation_need' signal further reinforces this.",
+        "business_relevance": "SignalForge users, including music producers, create content. Understanding their creative workflow challenges allows us to develop features (e.g., content drafting, scheduling, collaboration tools) or provide content that addresses these pain points, ultimately improving their ability to engage on social media.",
+        "recommended_action": "monitor"
+      },
+      "score": {
+        "priority_score": 30.53,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 27.2,
+          "engagement_score": 3.33,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "knowledge": {
+        "relevant_context": [
+          {
+            "content": ". When an IT manager posts about struggling with their current SIEM tool, SignalForge detects churn risk, scores it as a hot opportunity, and drafts a response sharing practical advice along with how their platform addresses the specific pain points mentioned.",
+            "source": "knowledge/product_docs/use_cases.md"
+          },
+          {
+            "content": "Opportunities are scored on a 0-100 scale across five dimensions: - Intent weight (how valuable is the intent type) - Confidence multiplier (how certain is the classification) - Engagement weight (Reddit upvotes as community validation) - Signal boost (bonus for high-value signals like help requests)",
+            "source": "knowledge/product_docs/faqs.md"
+          },
+          {
+            "content": "## Technical ### How is product knowledge managed? SignalForge uses a RAG (Retrieval-Augmented Generation) architecture. Product documentation is chunked, embedded, and stored in a ChromaDB vector database. When drafting responses, the system retrieves the most relevant knowledge chunks to inform the AI's output.",
+            "source": "knowledge/product_docs/faqs.md"
+          }
+        ],
+        "summary": "When an IT manager posts about struggling with their current SIEM tool, SignalForge detects churn risk, scores it as a hot opportunity, and drafts a response sharing practical advice along with how their platform addresses the specific pain points mentioned. Opportunities are scored on a 0-100 scale across five dimensions: - Intent weight (how valuable is the intent type) - Confidence multiplier (how certain is the classification) - Engagement weight (Reddit upvotes as community validation) - Signal boost (bonus for high-value signals like help requests) ## Technical ### How is product knowledge managed?",
+        "sources": [
+          "knowledge/product_docs/use_cases.md",
+          "knowledge/product_docs/faqs.md"
+        ]
+      },
+      "draft": {
+        "draft": "This is such a crucial point, and something many creatives struggle with! It's so easy to get caught in that trap of self-critique before an idea even has a chance to breathe. One thing that's helped me (and many others) is to consciously separate the \"creator\" hat from the \"editor\" hat. When you're in creation mode, just let everything flow without any judgment – think of it as brain-dumping but for music. Set a timer if it helps, and just promise yourself you won't hit delete or even analyze until that timer is up. Then, you can come back with your \"editor\" hat on later, with fresh ears. You might be surprised by what gems you find once the initial pressure is off. Embracing imperfection in the early stages is key to letting those truly unique ideas emerge.",
+        "tone": "helpful",
+        "cta": "",
+        "reasoning": "The reply acknowledges the user's problem and offers practical, actionable advice on how to separate creation from critique, aligning with a helpful tone. It avoids any product mention as it wouldn't be naturally useful to the user in this context."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "This is such a crucial point, and something many creatives struggle with! It's so easy to get caught in that trap of self-critique before an idea even has a chance to breathe. One thing that's helped me (and many others) is to consciously separate the \"creator\" hat from the \"editor\" hat. When you're in creation mode, just let everything flow without any judgment – think of it as brain-dumping but for music. Set a timer if it helps, and just promise yourself you won't hit delete or even analyze until that timer is up. Then, you can come back with your \"editor\" hat on later, with fresh ears. You might be surprised by what gems you find once the initial pressure is off. Embracing imperfection in the early stages is key to letting those truly unique ideas emerge.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "review_state": "paused"
+    },
+    {
+      "opportunity": {
+        "id": "medium_021a86b82a",
+        "platform": "medium",
+        "title": "Start With the Tasks You Hate",
+        "body": "The first task I automated with AI wasn&#x2019;t born out of a strategy meeting. I was sitting at my desk, about to run the same manual process&#x2026; Continue reading on Medium »",
+        "url": "https://medium.com/@shanebarnhill/start-with-the-tasks-you-hate-902ebfda1d3f",
+        "url_valid": true,
+        "score": 50,
+        "author": "Shane Barnhill",
+        "tags": [
+          "agentic-ai",
+          "claude",
+          "productivity",
+          "artificial-intelligence"
+        ],
+        "published_at": "Fri, 15 May 2026 15:16:12 GMT",
+        "opportunity_signals": [
+          "workflow_pain",
+          "automation_need"
+        ]
+      },
+      "intent": {
+        "intent": "problem_intent",
+        "confidence": 0.9,
+        "reasoning": "The post title 'Start With the Tasks You Hate' and the body's mention of 'the same manual process' explicitly indicate a user facing workflow pain, which they sought to solve through automation.",
+        "business_relevance": "This post highlights a common pain point (manual, repetitive tasks) that social media engagement platforms aim to solve through automation features, indicating a potential audience for our solutions.",
+        "recommended_action": "monitor"
+      },
+      "score": {
+        "priority_score": 33.41,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 30.08,
+          "engagement_score": 3.33,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "knowledge": {
+        "relevant_context": [
+          {
+            "content": "### Can I customize the scoring weights? Yes. The scoring engine uses a configurable `ScoringConfig` dataclass where you can adjust intent weights, engagement scaling, signal boost values, urgency bonus, and priority label thresholds. ### How does deduplication work?",
+            "source": "knowledge/product_docs/faqs.md"
+          },
+          {
+            "content": "**Supported intent types:** - **Buying Intent** — User actively seeking tools or products to purchase - **Problem Intent** — User experiencing workflow pain or operational challenges - **Hiring Intent** — User looking for people, agencies, or service providers",
+            "source": "knowledge/product_docs/features.md"
+          },
+          {
+            "content": "2. **Intent Classification** — An LLM-powered agent analyzes each opportunity to determine the user's underlying intent: are they buying, venting, hiring, or requesting features?",
+            "source": "knowledge/product_docs/product_overview.md"
+          }
+        ],
+        "summary": "The scoring engine uses a configurable `ScoringConfig` dataclass where you can adjust intent weights, engagement scaling, signal boost values, urgency bonus, and priority label thresholds. **Supported intent types:** - **Buying Intent** — User actively seeking tools or products to purchase - **Problem Intent** — User experiencing workflow pain or operational challenges - **Hiring Intent** — User looking for people, agencies, or service providers ### Can I customize the scoring weights?",
+        "sources": [
+          "knowledge/product_docs/faqs.md",
+          "knowledge/product_docs/features.md",
+          "knowledge/product_docs/product_overview.md"
+        ]
+      },
+      "draft": {
+        "draft": "This is such a fantastic approach! It really resonates because the tasks we dread the most often have the clearest pain points and the highest personal motivation to solve them. It's like the universe is giving you a built-in 'priority' flag for automation. Plus, the satisfaction of getting rid of a hated chore is a huge motivator to keep going with more complex automations. Thanks for sharing this perspective!",
+        "tone": "helpful",
+        "cta": "",
+        "reasoning": "The reply validates the user's insightful approach to automation, reinforcing why it's effective and motivating. It's conversational and helpful without mentioning any products, aligning with the 'cold' priority and the general nature of the post."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "This is such a fantastic approach! It really resonates because the tasks we dread the most often have the clearest pain points and the highest personal motivation to solve them. It's like the universe is giving you a built-in 'priority' flag for automation. Plus, the satisfaction of getting rid of a hated chore is a huge motivator to keep going with more complex automations. Thanks for sharing this perspective!",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "review_state": "paused"
+    },
+    {
+      "opportunity": {
+        "id": "medium_7219135b09",
+        "platform": "medium",
+        "title": "I Used time management tools for a few days: Here is what happened",
+        "body": "Have you ever sat down to study or do anything but ended up staring at a wall for 30 minutes, not knowing where to start&#xa0;? Well, that was&#x2026; Continue reading on Medium »",
+        "url": "https://medium.com/@lailabatool1512/i-used-time-management-tools-for-a-few-days-here-is-what-happened-9e35e75903d9",
+        "url_valid": true,
+        "score": 50,
+        "author": "Lailabatool",
+        "tags": [
+          "pomodoro-technique",
+          "decluttering",
+          "time-management",
+          "eisenhower-matrix",
+          "productivity"
+        ],
+        "published_at": "Fri, 15 May 2026 15:12:44 GMT",
+        "opportunity_signals": [
+          "tool_evaluation",
+          "automation_need"
+        ]
+      },
+      "intent": {
+        "intent": "problem_intent",
+        "confidence": 0.9,
+        "reasoning": "The post clearly describes a common workflow pain point ('staring at a wall for 30 minutes, not knowing where to start') that time management tools are intended to address, indicating the user is struggling with a process.",
+        "business_relevance": "Users of social media engagement platforms frequently face challenges with content planning, idea generation, and consistent execution, mirroring the 'not knowing where to start' problem. SignalForge can position itself as a solution for structured social media workflows and overcoming creative blocks.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 33.41,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 30.08,
+          "engagement_score": 3.33,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0
+        },
+        "recommended_action": "monitor"
+      },
+      "knowledge": {
+        "relevant_context": [
+          {
+            "content": "**Supported intent types:** - **Buying Intent** — User actively seeking tools or products to purchase - **Problem Intent** — User experiencing workflow pain or operational challenges - **Hiring Intent** — User looking for people, agencies, or service providers",
+            "source": "knowledge/product_docs/features.md"
+          },
+          {
+            "content": "### Can I customize the scoring weights? Yes. The scoring engine uses a configurable `ScoringConfig` dataclass where you can adjust intent weights, engagement scaling, signal boost values, urgency bonus, and priority label thresholds. ### How does deduplication work?",
+            "source": "knowledge/product_docs/faqs.md"
+          },
+          {
+            "content": "A developer tools company uses SignalForge to engage across 30+ programming subreddits",
+            "source": "knowledge/product_docs/use_cases.md"
+          }
+        ],
+        "summary": "The scoring engine uses a configurable `ScoringConfig` dataclass where you can adjust intent weights, engagement scaling, signal boost values, urgency bonus, and priority label thresholds. **Supported intent types:** - **Buying Intent** — User actively seeking tools or products to purchase - **Problem Intent** — User experiencing workflow pain or operational challenges - **Hiring Intent** — User looking for people, agencies, or service providers ### Can I customize the scoring weights?",
+        "sources": [
+          "knowledge/product_docs/features.md",
+          "knowledge/product_docs/faqs.md",
+          "knowledge/product_docs/use_cases.md"
+        ]
+      },
+      "draft": {
+        "draft": "That's a super relatable feeling! It's so frustrating to want to get started but feel paralyzed. One thing that often helps me when I'm staring at a blank slate is to break down the task into the absolute tiniest first step. Instead of 'study for exam,' think 'open textbook to Chapter 1' or 'find my notes for Section A.' It makes it less daunting and often builds momentum to tackle the next small step. Also, sometimes just committing to 15-20 minutes of focused work, even if you don't feel like it, can get the ball rolling. Hope that helps a bit!",
+        "tone": "helpful",
+        "cta": "",
+        "reasoning": "The reply directly addresses the user's problem of 'not knowing where to start' with actionable, helpful advice like breaking down tasks and time boxing, aligning with the requested tone and the problem_intent classification."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "That's a super relatable feeling! It's so frustrating to want to get started but feel paralyzed. One thing that often helps me when I'm staring at a blank slate is to break down the task into the absolute tiniest first step. Instead of 'study for exam,' think 'open textbook to Chapter 1' or 'find my notes for Section A.' It makes it less daunting and often builds momentum to tackle the next small step. Also, sometimes just committing to 15-20 minutes of focused work, even if you don't feel like it, can get the ball rolling. Hope that helps a bit!",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "review_state": "paused"
+    }
+  ],
   "rejected_items": [],
   "errors": [],
   "review_queue_stats": {
-    "pending": 139,
-    "edited": 1,
-    "rejected": 1,
-    "approved": 1,
-    "total": 142
+    "rejected": 4,
+    "approved": 2,
+    "approved_for_posting": 0,
+    "pending": 295,
+    "edited": 5,
+    "total": 315
   }
 }

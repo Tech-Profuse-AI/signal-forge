@@ -19,6 +19,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus, urlparse
 
+from utils.url_validator import (
+    is_valid_reddit_entry_id,
+    normalize_reddit_url,
+    reconstruct_reddit_url,
+    validate_and_clean,
+)
+
 logger = logging.getLogger("signalforge.reddit_rss")
 
 _MOCK_DATA_PATH = (
@@ -85,18 +92,45 @@ class RedditRSSProvider:
 
     def normalize(self, post: Dict[str, Any]) -> Dict[str, Any]:
         raw_id = post.get("id") or post.get("link") or post.get("url") or ""
-        url = post.get("url") or post.get("link") or ""
+        raw_url = post.get("url") or post.get("link") or ""
         body = self._extract_body(post)
 
+        # --- URL cleaning & validation (uses centralized normalize_reddit_url) ---
+        cleaned_url, is_valid = normalize_reddit_url(raw_url)
+
+        # Fallback: reconstruct from entry ID — ONLY for t3_ (post) IDs.
+        # t5_ (subreddit), t1_ (comment), etc. are rejected by reconstruct_reddit_url.
+        entry_id = post.get("entry_id", "")
+        if not is_valid and entry_id:
+            fallback_url = reconstruct_reddit_url(entry_id)
+            if fallback_url:
+                # Validate the reconstructed URL too
+                fallback_url, fallback_valid = normalize_reddit_url(fallback_url)
+                if fallback_valid:
+                    cleaned_url = fallback_url
+                    is_valid = True
+                    logger.debug(
+                        "Reconstructed Reddit URL from entry_id=%s -> %s",
+                        entry_id, cleaned_url,
+                    )
+
+        if not is_valid:
+            logger.warning(
+                "REJECTED invalid Reddit URL: %s (entry_id=%s) — "
+                "reason: failed validation after cleaning and reconstruction",
+                raw_url, post.get("entry_id", "N/A"),
+            )
+
         return {
-            "id": self._make_id(raw_id, url),
+            "id": self._make_id(raw_id, cleaned_url),
             "platform": "reddit",
             "title": str(post.get("title", "")).strip(),
             "body": body,
-            "url": url,
+            "url": cleaned_url,
+            "url_valid": is_valid,
             "score": self._extract_score(post),
             "author": self._extract_author(post),
-            "subreddit": self._extract_subreddit(post, url),
+            "subreddit": self._extract_subreddit(post, cleaned_url),
         }
 
     def _fetch_live(self, query: str, limit: int) -> List[Dict[str, Any]]:
@@ -121,10 +155,26 @@ class RedditRSSProvider:
             return []
 
         posts: List[Dict[str, Any]] = []
+        skipped = 0
+        skipped_at_parse = 0
         for entry in feed.entries[:limit]:
             raw = self._entry_to_raw(entry)
-            posts.append(self.normalize(raw))
+            if raw is None:
+                skipped_at_parse += 1
+                continue
+            normalised = self.normalize(raw)
+            if normalised.get("url_valid", True):
+                posts.append(normalised)
+            else:
+                skipped += 1
 
+        if skipped_at_parse:
+            logger.info(
+                "Skipped %d non-post RSS entries at parse (t5_/entity IDs)",
+                skipped_at_parse,
+            )
+        if skipped:
+            logger.info("Skipped %d entries with invalid URLs", skipped)
         logger.info("Fetched %d Reddit RSS posts for query '%s'", len(posts), query)
         return posts
 
@@ -137,7 +187,11 @@ class RedditRSSProvider:
             q = query.lower()
             posts = [post for post in posts if self._query_matches(post, q)]
 
-        normalised = [self.normalize(post) for post in posts[:limit]]
+        normalised = []
+        for post in posts[:limit]:
+            n = self.normalize(post)
+            if n.get("url_valid", True):
+                normalised.append(n)
         logger.info("Mock Reddit RSS fetch: query='%s' -> %d posts", query, len(normalised))
         return normalised
 
@@ -155,16 +209,35 @@ class RedditRSSProvider:
             return []
 
     @staticmethod
-    def _entry_to_raw(entry: Any) -> Dict[str, Any]:
+    def _entry_to_raw(entry: Any) -> Optional[Dict[str, Any]]:
+        """Convert a feedparser entry to a raw post dict.
+
+        Returns ``None`` for entries that are not actual Reddit posts
+        (e.g. subreddit/community metadata entries with ``t5_`` IDs).
+        """
+        entry_link = getattr(entry, "link", "") or ""
+        entry_id = getattr(entry, "id", "") or ""
+
+        # Early rejection: if there is no valid link AND the entry ID is
+        # a non-post entity (t5_ subreddit, t1_ comment, etc.), skip
+        # this entry entirely — it's not a post.
+        if not entry_link.strip() and not is_valid_reddit_entry_id(entry_id):
+            logger.info(
+                "REJECTED non-post RSS entry at parse: entry_id=%s (no link, non-post entity)",
+                entry_id,
+            )
+            return None
+
         body = getattr(entry, "summary", "") or ""
         body = re.sub(r"<[^>]+>", " ", body)
         body = re.sub(r"\s+", " ", body).strip()
 
         return {
-            "id": getattr(entry, "id", "") or getattr(entry, "link", ""),
+            "id": entry_id or entry_link,
+            "entry_id": entry_id,
             "title": getattr(entry, "title", ""),
             "body": body,
-            "url": getattr(entry, "link", ""),
+            "url": entry_link,
             "author": getattr(entry, "author", "") or "",
             "score": 10,
         }
@@ -225,7 +298,10 @@ class RedditRSSProvider:
             post.get("title", ""),
             post.get("body", ""),
         ]).lower()
-        return query in text
+        if query in text:
+            return True
+        terms = [term for term in re.split(r"\s+", query) if len(term) > 2]
+        return bool(terms) and any(term in text for term in terms)
 
     def __repr__(self) -> str:
         return f"<RedditRSSProvider mode='{self._mode}'>"

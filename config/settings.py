@@ -82,6 +82,17 @@ class Settings:
         self.supabase_url: str = os.getenv("SUPABASE_URL", "")
         self.supabase_key: str = os.getenv("SUPABASE_KEY", "")
 
+        # Scanner data-quality controls
+        self.cache_max_age_days: int = int(os.getenv("CACHE_MAX_AGE_DAYS", "7"))
+        self.clear_cache_on_boot: bool = (
+            os.getenv("CLEAR_CACHE_ON_BOOT", "false").lower()
+            in {"1", "true", "yes", "on"}
+        )
+        self.test_mode: bool = (
+            os.getenv("TEST_MODE", "false").lower()
+            in {"1", "true", "yes", "on"}
+        )
+
         self._initialized = True
         logger.info(
             "Settings initialised — LLM provider: %s", self.llm_provider

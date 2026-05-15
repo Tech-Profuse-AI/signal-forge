@@ -37,6 +37,8 @@ from urllib.parse import quote_plus, urlparse
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
+from utils.url_validator import validate_and_clean
+
 logger = logging.getLogger("signalforge.quora")
 
 _DEFAULT_MOCK_PATH = (
@@ -111,13 +113,19 @@ class QuoraProvider:
         Accepts either a raw scraped dict or an already-normalised dict
         and always returns the canonical Quora schema.
         """
-        url = raw.get("url", "")
+        raw_url = raw.get("url", "")
+        cleaned_url, is_valid = validate_and_clean(raw_url, "quora")
+
+        if not is_valid:
+            logger.debug("Skipping invalid Quora URL: %s", raw_url)
+
         return {
-            "id": raw.get("id") or _url_to_id(url),
+            "id": raw.get("id") or _url_to_id(cleaned_url or raw_url),
             "platform": "quora",
             "title": raw.get("title", "").strip(),
             "body": raw.get("body", "").strip(),
-            "url": url,
+            "url": cleaned_url,
+            "url_valid": is_valid,
             "score": int(raw.get("score", 0)),
             "author": raw.get("author", "").strip(),
             "topic": raw.get("topic", "").strip(),
@@ -149,7 +157,7 @@ class QuoraProvider:
 
         posts = [self.normalize(p) for p in pool[:limit]]
         logger.info(
-            "Mock fetch: query='%s' → %d/%d posts returned",
+            "Mock fetch: query='%s' -> %d/%d posts returned",
             query, len(posts), len(raw_posts),
         )
         return posts
@@ -159,19 +167,30 @@ class QuoraProvider:
     def _fetch_live(self, query: str, limit: int) -> List[Dict[str, Any]]:
         """
         1. Discover Quora URLs via search (SerpAPI or DuckDuckGo).
-        2. Crawl each question page (Firecrawl when configured) and extract structured content.
+        2. Filter URLs: only crawl valid www.quora.com question pages.
+        3. Crawl each question page (Firecrawl when configured) and extract structured content.
            Falls back to lightweight HTML meta parsing when crawling is unavailable.
-        3. Normalise and return.
+        4. Normalise and return.
 
         Crawl targets are capped at 5 to stay under 90s total runtime.
         """
-        urls = self._search_quora_urls(query, limit)
+        raw_urls = self._search_quora_urls(query, limit)
+
+        # --- Pre-crawl URL filtering ---
+        urls: List[str] = []
+        for raw_url in raw_urls:
+            cleaned, valid = validate_and_clean(raw_url, "quora")
+            if valid:
+                urls.append(cleaned)
+            else:
+                logger.debug("Skipping Quora URL before crawl: %s", raw_url)
+
         # Cap crawl targets to avoid >90s runtime with Firecrawl
         max_crawl = min(5, limit)
         crawl_urls = urls[:max_crawl]
         logger.info(
-            "Discovered %d Quora URLs for '%s' — crawling %d/%d",
-            len(urls), query, len(crawl_urls), len(urls),
+            "Discovered %d Quora URLs for '%s' — valid %d — crawling %d",
+            len(raw_urls), query, len(urls), len(crawl_urls),
         )
 
         posts: List[Dict[str, Any]] = []
@@ -180,7 +199,15 @@ class QuoraProvider:
                 logger.info("Crawling %d/%d: %s", idx, len(crawl_urls), url)
                 raw = self._crawl_quora_page(url) or self._parse_quora_page(url)
                 if raw:
-                    posts.append(self.normalize(raw))
+                    body = raw.get("body", "")
+                    if len(body.strip()) < 25:
+                        logger.info(
+                            "Quora page has short body; passing to scanner filter: body_len=%d url=%s",
+                            len(body.strip()), url,
+                        )
+                    normalised = self.normalize(raw)
+                    if normalised.get("url_valid", True):
+                        posts.append(normalised)
                 time.sleep(self._request_delay)
             except Exception as exc:
                 logger.warning("Failed to parse %s: %s", url, exc)
@@ -192,7 +219,7 @@ class QuoraProvider:
             return self._fetch_mock(query, limit)
 
         logger.info(
-            "Live fetch: query='%s' → %d posts", query, len(posts)
+            "Live fetch: query='%s' -> %d posts", query, len(posts)
         )
         return posts
 

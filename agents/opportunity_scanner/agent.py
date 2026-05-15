@@ -18,6 +18,8 @@ from typing import Any, Dict, List, Optional
 from agents.opportunity_scanner.reddit_scanner import RedditScanner
 from agents.opportunity_scanner.cache_manager import CacheManager
 from agents.opportunity_scanner.filters import OpportunityFilter, FilterConfig
+from utils.dedup import cache_keys_for_posts, dedupe_exact_posts
+from utils.query_normalizer import normalize_queries
 
 logger = logging.getLogger("signalforge.opportunity_scanner")
 
@@ -43,6 +45,8 @@ class OpportunityScannerAgent:
         filter_config: Optional[FilterConfig] = None,
         cache_dir: Optional[str] = None,
         keywords: Optional[List[str]] = None,
+        cache_max_age_days: Optional[int] = None,
+        ephemeral_cache: bool = False,
     ) -> None:
         # ── Sub-components ────────────────────────────────────────────
         active_reddit_provider = self._resolve_reddit_provider(
@@ -60,7 +64,11 @@ class OpportunityScannerAgent:
         # in-memory-only cache for mock mode so the full dataset is always
         # available; only write through to disk in live mode.
         self._mock_mode = self.scanner.mode == "mock"
-        self.cache = CacheManager(cache_dir=cache_dir, ephemeral=self._mock_mode)
+        self.cache = CacheManager(
+            cache_dir=cache_dir,
+            ephemeral=self._mock_mode or ephemeral_cache,
+            max_age_days=cache_max_age_days,
+        )
         self.filter = OpportunityFilter(config=filter_config)
 
         # Default keyword batches
@@ -135,8 +143,11 @@ class OpportunityScannerAgent:
         Returns:
             List of filtered, deduplicated opportunity dicts.
         """
-        kw = keywords or self.default_keywords
-        logger.info("Starting scan — keywords=%s", kw)
+        raw_kw = keywords or self.default_keywords
+        kw = normalize_queries(raw_kw) or self.default_keywords
+        if kw != raw_kw:
+            logger.info("Query normalization: raw=%s normalized=%s", raw_kw, kw)
+        logger.info("Starting Reddit scan - keywords=%s", kw)
 
         # 1. Fetch
         raw_posts = self.scanner.scan_keywords(
@@ -150,68 +161,97 @@ class OpportunityScannerAgent:
 
         # 2. Normalise
         normalised = self._normalise(raw_posts)
+        logger.info(
+            "Reddit normalise stage: fetched=%d valid=%d rejected=%d",
+            len(raw_posts),
+            len(normalised),
+            len(raw_posts) - len(normalised),
+        )
 
         # 3. Deduplicate
         deduped = self._deduplicate(normalised)
         self.stats["deduped"] += len(deduped)
-        logger.info("After dedup: %d posts", len(deduped))
+        logger.info(
+            "Reddit dedup stage: input=%d kept=%d removed=%d",
+            len(normalised),
+            len(deduped),
+            len(normalised) - len(deduped),
+        )
 
         # 4. Filter
         opportunities = self.filter.filter_opportunities(deduped)
         self.stats["filtered"] += len(opportunities)
         self.stats["approved"] += len(opportunities)
-        logger.info("Final opportunities: %d", len(opportunities))
+        logger.info(
+            "Reddit filter stage: input=%d kept=%d rejected=%d",
+            len(deduped),
+            len(opportunities),
+            len(deduped) - len(opportunities),
+        )
+        logger.info("Final Reddit opportunities: %d", len(opportunities))
 
-        # 5. Mark new IDs as seen
-        new_ids = [p["id"] for p in opportunities if p.get("id")]
-        self.cache.mark_seen_batch(new_ids)
+        # 5. Mark exact IDs and URLs as seen
+        new_keys = cache_keys_for_posts(opportunities)
+        self.cache.mark_seen_batch(new_keys)
 
         return opportunities
 
     # ── Normalisation ─────────────────────────────────────────────────
 
     def _normalise(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Ensure every post has all expected keys with sensible defaults."""
+        """Ensure every post has all expected keys with sensible defaults.
+
+        For Reddit posts, also validates the URL as a defense-in-depth
+        measure.  Posts with invalid URLs are filtered out and logged.
+        """
+        from utils.url_validator import is_valid_post_url
+
         normalised: List[Dict[str, Any]] = []
+        url_rejected = 0
         for post in posts:
+            platform = post.get("platform", "reddit")
+            url = post.get("url", "")
+
+            # Defense-in-depth: reject Reddit posts with invalid URLs
+            if platform == "reddit" and url and not is_valid_post_url(url, "reddit"):
+                logger.warning(
+                    "FILTER REJECT: id=%s platform=reddit reason=invalid_url url=%s",
+                    post.get("id", "?"), url,
+                )
+                url_rejected += 1
+                continue
+
             normalised.append({
-                "platform": post.get("platform", "reddit"),
+                "platform": platform,
                 "id": post.get("id", ""),
                 "title": post.get("title", ""),
                 "body": post.get("body", ""),
-                "url": post.get("url", ""),
+                "url": url,
                 "score": post.get("score", 0),
                 "author": post.get("author", "[unknown]"),
                 "subreddit": post.get("subreddit", ""),
                 "created_utc": post.get("created_utc", 0),
                 "num_comments": post.get("num_comments", 0),
             })
+
+        if url_rejected:
+            logger.info(
+                "URL validation gate filtered %d posts with invalid URLs",
+                url_rejected,
+            )
         return normalised
 
     # ── Deduplication ─────────────────────────────────────────────────
 
     def _deduplicate(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Remove posts that have already been seen (via CacheManager)
-        and remove in-batch duplicates by post ID.
-        """
-        seen_in_batch: set = set()
-        unique: List[Dict[str, Any]] = []
-
-        for post in posts:
-            pid = post.get("id", "")
-            if not pid:
-                unique.append(post)
-                continue
-            if self.cache.has_seen(pid):
-                logger.debug("Skipping seen post: %s", pid)
-                continue
-            if pid in seen_in_batch:
-                continue
-            seen_in_batch.add(pid)
-            unique.append(post)
-
-        return unique
+        """Remove only exact duplicate IDs, exact duplicate URLs, and cache hits."""
+        return dedupe_exact_posts(
+            posts,
+            cache=self.cache,
+            logger=logger,
+            stage="reddit",
+            platform="reddit",
+        )
 
     # ── Report ────────────────────────────────────────────────────────
 

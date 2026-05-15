@@ -37,6 +37,8 @@ from typing import Any, Dict, List, Optional
 from agents.opportunity_scanner.cache_manager import CacheManager
 from agents.opportunity_scanner.filters import OpportunityFilter, FilterConfig
 from providers.quora_provider import QuoraProvider
+from utils.dedup import cache_keys_for_posts, dedupe_exact_posts
+from utils.query_normalizer import normalize_queries
 
 logger = logging.getLogger("signalforge.quora_scanner")
 
@@ -123,6 +125,8 @@ class QuoraScannerAgent:
         cache_dir: Optional[str] = None,
         cache_filename: str = "seen_quora_posts.json",
         keywords: Optional[List[str]] = None,
+        cache_max_age_days: Optional[int] = None,
+        ephemeral_cache: bool = False,
     ) -> None:
         # ── Provider ──────────────────────────────────────────────────
         if force_mock or quora_provider is None:
@@ -136,9 +140,10 @@ class QuoraScannerAgent:
         self._cache = CacheManager(
             cache_dir=cache_dir,
             cache_filename=cache_filename,
-            max_age_days=7,
+            max_age_days=cache_max_age_days,
+            ephemeral=ephemeral_cache,
         )
-        self._filter = OpportunityFilter(config=filter_config)
+        self._filter = OpportunityFilter(config=filter_config or self._quora_filter_config())
 
         self.default_keywords = keywords or [
             "social media automation",
@@ -173,8 +178,11 @@ class QuoraScannerAgent:
             List of filtered, deduplicated opportunity dicts, each
             annotated with ``"opportunity_signals"``.
         """
-        kw = keywords or self.default_keywords
-        logger.info("QuoraScannerAgent.scan() — keywords=%s", kw)
+        raw_kw = keywords or self.default_keywords
+        kw = normalize_queries(raw_kw) or self.default_keywords
+        if kw != raw_kw:
+            logger.info("Query normalization: raw=%s normalized=%s", raw_kw, kw)
+        logger.info("QuoraScannerAgent.scan() - keywords=%s", kw)
 
         # 1. Fetch
         raw_posts = self._fetch_all(kw, limit_per_keyword)
@@ -183,22 +191,38 @@ class QuoraScannerAgent:
 
         # 2. Normalise (provider already normalises; this ensures schema)
         normalised = self._normalise(raw_posts)
+        logger.info(
+            "Quora normalise stage: fetched=%d valid=%d rejected=%d",
+            len(raw_posts),
+            len(normalised),
+            len(raw_posts) - len(normalised),
+        )
 
         # 3. Deduplicate
         deduped = self._deduplicate(normalised)
         self.stats["deduped"] += len(deduped)
-        logger.info("After dedup: %d posts", len(deduped))
+        logger.info(
+            "Quora dedup stage: input=%d kept=%d removed=%d",
+            len(normalised),
+            len(deduped),
+            len(normalised) - len(deduped),
+        )
 
         # 4. Filter via OpportunityFilter
         #    Quora posts don't have subreddits — pass through the platform-
         #    agnostic filter then re-detect with Quora-specific signals.
         filtered = self._filter_quora(deduped)
         self.stats["filtered"] += len(filtered)
-        logger.info("After filter: %d posts", len(filtered))
+        logger.info(
+            "Quora filter stage: input=%d kept=%d rejected=%d",
+            len(deduped),
+            len(filtered),
+            len(deduped) - len(filtered),
+        )
 
-        # 5. Mark seen
-        new_ids = [p["id"] for p in filtered if p.get("id")]
-        self._cache.mark_seen_batch(new_ids)
+        # 5. Mark exact IDs and URLs as seen
+        new_keys = cache_keys_for_posts(filtered)
+        self._cache.mark_seen_batch(new_keys)
         self.stats["approved"] += len(filtered)
 
         return filtered
@@ -267,22 +291,14 @@ class QuoraScannerAgent:
     def _deduplicate(
         self, posts: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Remove cross-run and in-batch duplicates by post ID."""
-        seen_in_batch: set = set()
-        unique: List[Dict[str, Any]] = []
-        for post in posts:
-            pid = post.get("id", "")
-            if not pid:
-                unique.append(post)
-                continue
-            if self._cache.has_seen(pid):
-                logger.debug("Skipping already-seen post: %s", pid)
-                continue
-            if pid in seen_in_batch:
-                continue
-            seen_in_batch.add(pid)
-            unique.append(post)
-        return unique
+        """Remove only exact duplicate IDs, exact duplicate URLs, and cache hits."""
+        return dedupe_exact_posts(
+            posts,
+            cache=self._cache,
+            logger=logger,
+            stage="quora",
+            platform="quora",
+        )
 
     def _filter_quora(
         self, posts: List[Dict[str, Any]]
@@ -317,6 +333,13 @@ class QuoraScannerAgent:
             kept.append({**original, "opportunity_signals": quora_signals})
 
         return kept
+
+    @staticmethod
+    def _quora_filter_config() -> FilterConfig:
+        """Quora search results often have score=0, so lean on signals."""
+        config = FilterConfig(minimum_score=0, minimum_body_length=35)
+        config.blacklisted_subreddits = []
+        return config
 
     def __repr__(self) -> str:
         return (

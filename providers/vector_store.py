@@ -423,24 +423,6 @@ class LocalChromaVectorStore:
         self,
         gemini_api_key: Optional[str],
     ):
-        api_key = gemini_api_key or os.getenv("GEMINI_API_KEY", "")
-        if api_key:
-            try:
-                provider = GeminiEmbeddingProvider(
-                    api_key=api_key,
-                    model_name=self.config.gemini_embedding_model,
-                )
-                logger.info(
-                    "Using Gemini embeddings for vector store (%s)",
-                    self.config.gemini_embedding_model,
-                )
-                return provider
-            except Exception as exc:
-                logger.warning(
-                    "Gemini embeddings unavailable, falling back to local hash embeddings: %s",
-                    exc,
-                )
-
         logger.info("Using deterministic local hash embeddings for vector store")
         return HashEmbeddingProvider(dimensions=self.config.fallback_dimensions)
 

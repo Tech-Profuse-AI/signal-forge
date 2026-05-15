@@ -1,0 +1,44 @@
+{
+  "query": "AI automation workflow pain points",
+  "mode": "mock",
+  "timestamp": "2026-05-08T11:31:29+00:00",
+  "elapsed_seconds": 41.3,
+  "summary": {
+    "total_opportunities": 0,
+    "processed": 0,
+    "approved": 0,
+    "review_queue": 202,
+    "slack_sent": 0,
+    "failed": 0,
+    "source_metrics": {
+      "reddit": {
+        "fetched": 0,
+        "deduped": 0,
+        "filtered": 0,
+        "approved": 0
+      },
+      "quora": {
+        "fetched": 12,
+        "deduped": 2,
+        "filtered": 0,
+        "approved": 0
+      },
+      "medium": {
+        "fetched": 15,
+        "deduped": 1,
+        "filtered": 0,
+        "approved": 0
+      }
+    }
+  },
+  "approved_items": [],
+  "rejected_items": [],
+  "errors": [],
+  "review_queue_stats": {
+    "rejected": 4,
+    "approved": 4,
+    "pending": 202,
+    "edited": 5,
+    "total": 215
+  }
+}

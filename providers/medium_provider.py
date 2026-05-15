@@ -32,10 +32,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from utils.url_validator import validate_and_clean
+
 logger = logging.getLogger("signalforge.medium")
 
 _MOCK_DATA_PATH = (
     Path(__file__).resolve().parent.parent / "data" / "mock_medium_posts.json"
+)
+_FALLBACK_MOCK_DATA_PATH = (
+    Path(__file__).resolve().parent.parent / "tests" / "mock_medium_posts.json"
 )
 
 _MEDIUM_RSS_URL = "https://medium.com/feed/tag/{query}"
@@ -124,19 +129,29 @@ class MediumProvider:
         post_id = self._make_id(raw_id)
 
         title = post.get("title", "").strip()
-        url = post.get("url") or post.get("link") or ""
+        raw_url = post.get("url") or post.get("link") or ""
         author = self._extract_author(post)
         body = self._extract_body(post)
         tags = self._extract_tags(post)
         published_at = self._extract_published_at(post)
         score = self._derive_score(post, body, published_at)
 
+        # --- URL cleaning & validation ---
+        cleaned_url, is_valid = validate_and_clean(raw_url, "medium")
+
+        if not is_valid:
+            logger.debug(
+                "Skipping invalid Medium URL: %s reason: failed validation",
+                raw_url,
+            )
+
         return {
             "id": post_id,
             "platform": "medium",
             "title": title,
             "body": body,
-            "url": url,
+            "url": cleaned_url,
+            "url_valid": is_valid,
             "score": score,
             "author": author,
             "tags": tags,
@@ -167,10 +182,17 @@ class MediumProvider:
 
         entries = feed.entries[:limit]
         posts: List[Dict[str, Any]] = []
+        skipped = 0
         for entry in entries:
             raw = self._entry_to_raw(entry)
-            posts.append(self.normalize(raw))
+            normalised = self.normalize(raw)
+            if normalised.get("url_valid", True):
+                posts.append(normalised)
+            else:
+                skipped += 1
 
+        if skipped:
+            logger.info("Skipped %d Medium entries with invalid URLs", skipped)
         logger.info(
             "Fetched %d articles for tag '%s'", len(posts), query
         )
@@ -195,14 +217,22 @@ class MediumProvider:
 
         normalised = [self.normalize(p) for p in posts[:limit]]
         logger.info(
-            "Mock fetch: query='%s' → %d posts", query, len(normalised)
+            "Mock fetch: query='%s' -> %d posts", query, len(normalised)
         )
         return normalised
 
     def _load_mock_data(self) -> List[Dict[str, Any]]:
         if not self._mock_path.exists():
-            logger.warning("Mock data not found: %s", self._mock_path)
-            return []
+            if _FALLBACK_MOCK_DATA_PATH.exists():
+                logger.warning(
+                    "Mock data not found: %s; falling back to %s",
+                    self._mock_path,
+                    _FALLBACK_MOCK_DATA_PATH,
+                )
+                self._mock_path = _FALLBACK_MOCK_DATA_PATH
+            else:
+                logger.warning("Mock data not found: %s", self._mock_path)
+                return []
         try:
             with open(self._mock_path, "r", encoding="utf-8") as fh:
                 data = json.load(fh)

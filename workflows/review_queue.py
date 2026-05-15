@@ -17,7 +17,14 @@ from uuid import uuid4
 
 logger = logging.getLogger("signalforge.review_queue")
 
-VALID_REVIEW_STATUSES = frozenset(["pending", "approved", "rejected", "edited"])
+VALID_REVIEW_STATUSES = frozenset([
+    "pending",
+    "approved",
+    "approved_for_posting",
+    "rejected",
+    "edited",
+])
+REVIEW_DECISION_STATUSES = frozenset(["approved", "rejected", "edited"])
 _ACTION_TO_STATUS = {
     "approve": "approved",
     "reject": "rejected",
@@ -47,7 +54,7 @@ class ReviewQueue:
         logger.info("ReviewQueue initialised - backend=%s path=%s", backend, self._queue_path)
 
     def enqueue(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        """Add an item to the pending review queue."""
+        """Add an item to the review queue, defaulting to pending status."""
         if not self._is_valid_item(item):
             raise ValueError(
                 "Review queue items must include dict values for opportunity, draft, and compliance."
@@ -55,10 +62,18 @@ class ReviewQueue:
 
         store = self._load_store()
         review_id = self._build_unique_review_id(item, store["items"])
+        initial_status = self._clean_text(
+            str(item.get("review_status") or item.get("status") or "pending")
+        ).lower()
+        if initial_status not in VALID_REVIEW_STATUSES:
+            initial_status = "pending"
+
+        timestamp = self._timestamp()
         record = {
             "review_id": review_id,
-            "review_status": "pending",
-            "reviewer_action": "",
+            "review_status": initial_status,
+            "status": initial_status,
+            "reviewer_action": self._clean_text(str(item.get("reviewer_action", ""))),
             "final_draft": self._initial_final_draft(item),
             "opportunity": deepcopy(item.get("opportunity", {})),
             "draft": deepcopy(item.get("draft", {})),
@@ -71,9 +86,9 @@ class ReviewQueue:
             else {},
             "review_channel": self._clean_text(str(item.get("review_channel", ""))),
             "reviewer": "",
-            "created_at": self._timestamp(),
+            "created_at": timestamp,
             "dequeued_at": "",
-            "reviewed_at": "",
+            "reviewed_at": timestamp if initial_status != "pending" else "",
         }
         store["items"].append(record)
         self._save_store(store)
@@ -90,7 +105,10 @@ class ReviewQueue:
         """
         store = self._load_store()
         for record in store["items"]:
-            if record.get("review_status") != "pending":
+            status = self._clean_text(
+                str(record.get("review_status") or record.get("status") or "")
+            ).lower()
+            if status != "pending":
                 continue
             if not record.get("dequeued_at"):
                 record["dequeued_at"] = self._timestamp()
@@ -116,7 +134,7 @@ class ReviewQueue:
             raise ValueError("review_id is required to mark a review item.")
         if not review_status:
             review_status = _ACTION_TO_STATUS.get(action, "")
-        if review_status not in VALID_REVIEW_STATUSES or review_status == "pending":
+        if review_status not in REVIEW_DECISION_STATUSES:
             raise ValueError(
                 "review_status must be one of approved, rejected, or edited."
             )
@@ -130,6 +148,7 @@ class ReviewQueue:
 
         final_draft = self._final_draft_for_action(record, item, review_status)
         record["review_status"] = review_status
+        record["status"] = review_status
         record["reviewer_action"] = action
         record["final_draft"] = final_draft
         record["reviewer"] = self._clean_text(str(item.get("reviewer", "")))
@@ -184,7 +203,9 @@ class ReviewQueue:
         counts = {status: 0 for status in VALID_REVIEW_STATUSES}
         items = self._load_store()["items"]
         for record in items:
-            status = self._clean_text(str(record.get("review_status", ""))).lower()
+            status = self._clean_text(
+                str(record.get("review_status") or record.get("status") or "")
+            ).lower()
             if status in counts:
                 counts[status] += 1
 

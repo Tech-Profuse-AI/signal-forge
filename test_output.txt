@@ -1,0 +1,37 @@
+{'content': [{'base': 'https://www.reddit.com/search.rss?q=automation',
+              'language': None,
+              'type': 'text/html',
+              'value': '<div> Are you fascinated by the wonders of automation, '
+                       'mesmerized by the power of ChatGPT, or intrigued by '
+                       'the endless possibilities of Artificial Intelligence '
+                       'and automation? Look no further! Our vibrant Reddit '
+                       'community is the perfect hub for enthusiasts like you. '
+                       "As a member of our community, you'll gain access to a "
+                       'wealth of resources, including: 🔬 Thought-provoking '
+                       'discussions on automation, ChatGPT, and AI. 🌟 '
+                       'Exclusive insights into the latest advancements and '
+                       'industry news </div> <div> <a '
+                       'href="https://www.reddit.com/r/automation/">[link]</a> '
+                       '</div>'}],
+ 'guidislink': True,
+ 'id': 'https://www.reddit.com/t5_2qrbn',
+ 'link': 'https://www.reddit.com/r/automation/',
+ 'links': [{'href': 'https://www.reddit.com/r/automation/',
+            'rel': 'alternate',
+            'type': 'text/html'}],
+ 'summary': '<div> Are you fascinated by the wonders of automation, mesmerized '
+            'by the power of ChatGPT, or intrigued by the endless '
+            'possibilities of Artificial Intelligence and automation? Look no '
+            'further! Our vibrant Reddit community is the perfect hub for '
+            "enthusiasts like you. As a member of our community, you'll gain "
+            'access to a wealth of resources, including: 🔬 Thought-provoking '
+            'discussions on automation, ChatGPT, and AI. 🌟 Exclusive insights '
+            'into the latest advancements and industry news </div> <div> <a '
+            'href="https://www.reddit.com/r/automation/">[link]</a> </div>',
+ 'title': 'ChatGPT, Artificial Intelligence and Automation',
+ 'title_detail': {'base': 'https://www.reddit.com/search.rss?q=automation',
+                  'language': None,
+                  'type': 'text/plain',
+                  'value': 'ChatGPT, Artificial Intelligence and Automation'},
+ 'updated': '2009-01-13T06:58:29+00:00',
+ 'updated_parsed': time.struct_time(tm_year=2009, tm_mon=1, tm_mday=13, tm_hour=6, tm_min=58, tm_sec=29, tm_wday=1, tm_yday=13, tm_isdst=0)}

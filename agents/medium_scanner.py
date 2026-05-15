@@ -1,19 +1,4 @@
-"""
-SignalForge Medium Scanner Agent.
-
-Orchestrates the full Medium discovery pipeline:
-  1. Fetch articles via MediumProvider (mock or live RSS)
-  2. Deduplicate via CacheManager (ID-based)
-  3. Filter via OpportunityFilter
-  4. Extract article-optimised signals
-
-Signal types (article-optimised keyword detection):
-  - problem_intent
-  - workflow_pain
-  - tool_evaluation
-  - competitor_mention
-  - automation_need
-"""
+"""SignalForge Medium scanner agent."""
 
 from __future__ import annotations
 
@@ -22,21 +7,21 @@ import re
 from typing import Any, Dict, List, Optional
 
 from agents.opportunity_scanner.cache_manager import CacheManager
-from agents.opportunity_scanner.filters import OpportunityFilter, FilterConfig
+from agents.opportunity_scanner.filters import FilterConfig, OpportunityFilter
 from providers.medium_provider import MediumProvider
+from utils.dedup import cache_keys_for_posts, dedupe_exact_posts
+from utils.query_normalizer import normalize_queries, normalize_query
 
 logger = logging.getLogger("signalforge.medium_scanner")
 
-
-# ── Article-optimised signal keywords ────────────────────────────────
 
 _SIGNAL_PATTERNS: Dict[str, List[str]] = {
     "problem_intent": [
         "problem", "challenge", "struggle", "difficulty", "issue",
         "obstacle", "pain", "friction", "blocker", "bottleneck",
         "why i stopped", "what's wrong with", "the problem with",
-        "why most", "common mistake", "pitfall", "failure",
-        "broken", "doesn't work", "failed to",
+        "common mistake", "pitfall", "failure", "broken",
+        "doesn't work", "failed to",
     ],
     "workflow_pain": [
         "workflow", "process", "pipeline", "manual", "repetitive",
@@ -76,31 +61,89 @@ _SIGNAL_PATTERNS: Dict[str, List[str]] = {
     ],
 }
 
+_MEDIUM_FALLBACK_TAGS = ["ai", "automation", "productivity", "startups"]
+
+_MEDIUM_TAG_KEYWORDS: Dict[str, List[str]] = {
+    "ai": ["ai", "artificial", "gpt", "llm", "agent", "agents"],
+    "automation": [
+        "automation", "automate", "automating", "workflow",
+        "schedule", "scheduling",
+    ],
+    "workflow": ["workflow", "workflows", "process", "pipeline"],
+    "ai-tools": ["tool", "tools", "software", "platform"],
+    "productivity": [
+        "productivity", "efficient", "efficiency", "save", "time",
+        "schedule", "scheduling",
+    ],
+    "social-media": [
+        "social", "media", "reddit", "instagram", "linkedin", "twitter",
+    ],
+    "marketing": ["marketing", "content", "lead", "campaign", "brand"],
+    "content-marketing": ["content", "writing", "copywriting", "blog"],
+    "startups": ["startup", "startups", "founder", "saas"],
+    "sales": ["sales", "crm", "lead"],
+}
+
+
+def extract_medium_tags(query: str) -> List[str]:
+    """Generate 2-5 Medium RSS tags from a natural-language query."""
+    normalised = normalize_query(query)
+    text = f"{query} {normalised}".lower()
+    tokens = set(re.findall(r"[a-z0-9]+", text))
+
+    tags: List[str] = []
+    for tag, keywords in _MEDIUM_TAG_KEYWORDS.items():
+        if any(keyword in tokens or keyword in text for keyword in keywords):
+            tags.append(tag)
+
+    if "social-media" in tags and "marketing" not in tags:
+        tags.append("marketing")
+    if "automation" in tags and "workflow" not in tags and "social-media" not in tags:
+        tags.append("workflow")
+    if "automation" in tags and "productivity" not in tags:
+        tags.append("productivity")
+    if "ai" in tags and "ai-tools" not in tags and ({"tool", "tools"} & tokens):
+        tags.append("ai-tools")
+    if "tools" in tokens and "ai-tools" not in tags:
+        tags.append("ai-tools")
+
+    if len(tags) < 2:
+        for fallback in _MEDIUM_FALLBACK_TAGS:
+            if fallback not in tags:
+                tags.append(fallback)
+            if len(tags) >= 2:
+                break
+
+    deduped: List[str] = []
+    for tag in tags:
+        clean = re.sub(r"[^a-z0-9-]+", "-", tag.lower()).strip("-")
+        if clean and clean not in deduped:
+            deduped.append(clean)
+        if len(deduped) >= 5:
+            break
+
+    return deduped or list(_MEDIUM_FALLBACK_TAGS)
+
 
 class MediumScannerAgent:
-    """
-    Discovers and classifies Medium articles as engagement opportunities.
-
-    Usage::
-
-        agent = MediumScannerAgent()                      # mock
-        agent = MediumScannerAgent(mode="live")           # live RSS
-        opportunities = agent.scan(["ai automation", "workflow"])
-    """
+    """Discovers and classifies Medium articles as opportunities."""
 
     def __init__(
         self,
         mode: str = "mock",
-        mock_data_path: Optional[str] = None,
         filter_config: Optional[FilterConfig] = None,
         cache_dir: Optional[str] = None,
         default_keywords: Optional[List[str]] = None,
+        mock_data_path: Optional[str] = None,
+        cache_max_age_days: Optional[int] = None,
+        ephemeral_cache: bool = False,
     ) -> None:
         self._provider = MediumProvider(mode=mode, mock_data_path=mock_data_path)
         self._cache = CacheManager(
             cache_dir=cache_dir,
             cache_filename="seen_medium_posts.json",
-            max_age_days=7,
+            max_age_days=cache_max_age_days,
+            ephemeral=ephemeral_cache,
         )
         self._filter = OpportunityFilter(
             config=filter_config or self._medium_filter_config()
@@ -115,12 +158,10 @@ class MediumScannerAgent:
         self.stats = {"fetched": 0, "deduped": 0, "filtered": 0, "approved": 0}
 
         logger.info(
-            "MediumScannerAgent ready — mode=%s, cache=%d seen",
+            "MediumScannerAgent ready - mode=%s, cache=%d seen",
             self._provider.mode,
             self._cache.size,
         )
-
-    # ── Public API ────────────────────────────────────────────────────
 
     @property
     def mode(self) -> str:
@@ -139,54 +180,73 @@ class MediumScannerAgent:
         keywords: Optional[List[str]] = None,
         limit_per_keyword: int = 10,
     ) -> List[Dict[str, Any]]:
-        """
-        Run the full pipeline: fetch → deduplicate → filter → signal extraction.
+        """Run fetch, exact dedup, balanced filtering, and signal extraction."""
+        raw_kw = keywords or self._default_keywords
+        normalised_queries = normalize_queries(raw_kw) or self._default_keywords
+        tags: List[str] = []
+        for query in normalised_queries:
+            for tag in extract_medium_tags(query):
+                if tag not in tags:
+                    tags.append(tag)
 
-        Args:
-            keywords:          Tag queries to search (uses defaults if None).
-            limit_per_keyword: Max articles to fetch per keyword.
+        logger.info(
+            "Medium tag generation: raw=%s normalized=%s tags=%s",
+            raw_kw,
+            normalised_queries,
+            tags,
+        )
 
-        Returns:
-            List of filtered, signal-annotated article dicts.
-        """
-        kw = keywords or self._default_keywords
-        logger.info("MediumScannerAgent.scan — keywords=%s", kw)
+        raw_posts = self._fetch_all(tags, limit_per_keyword)
+        if not raw_posts:
+            logger.warning(
+                "Medium generated tags returned 0 articles; trying fallback tags=%s",
+                _MEDIUM_FALLBACK_TAGS,
+            )
+            raw_posts = self._fetch_all(_MEDIUM_FALLBACK_TAGS, limit_per_keyword)
 
-        # 1. Fetch
-        raw_posts = self._fetch_all(kw, limit_per_keyword)
         self.stats["fetched"] += len(raw_posts)
-        logger.info("Total fetched: %d articles", len(raw_posts))
+        logger.info("Medium fetch stage: fetched=%d articles", len(raw_posts))
 
-        # 2. Deduplicate
         deduped = self._deduplicate(raw_posts)
         self.stats["deduped"] += len(deduped)
-        logger.info("After dedup: %d articles", len(deduped))
+        logger.info(
+            "Medium dedup stage: input=%d kept=%d removed=%d",
+            len(raw_posts),
+            len(deduped),
+            len(raw_posts) - len(deduped),
+        )
 
-        # 3. Filter
         filtered = self._filter.filter_opportunities(deduped)
         self.stats["filtered"] += len(filtered)
-        logger.info("After filter: %d articles", len(filtered))
+        logger.info(
+            "Medium filter stage: input=%d kept=%d rejected=%d",
+            len(deduped),
+            len(filtered),
+            len(deduped) - len(filtered),
+        )
 
-        # 4. Signal extraction (article-optimised)
-        opportunities = []
+        opportunities: List[Dict[str, Any]] = []
         for article in filtered:
             signals = self._extract_signals(article)
             if signals:
                 enriched = {**article, "opportunity_signals": signals}
                 opportunities.append(enriched)
                 logger.info(
-                    "SIGNAL [%s] %s — %s",
+                    "SIGNAL [%s] %s - %s",
                     article.get("id", "?"),
                     signals,
                     article.get("title", "")[:60],
                 )
+            else:
+                logger.info(
+                    "FILTER REJECT: id=%s platform=medium reason=low_relevance_medium_signals title=%s",
+                    article.get("id", "?"),
+                    article.get("title", "")[:60],
+                )
 
-        # 5. Mark seen
-        new_ids = [p["id"] for p in opportunities if p.get("id")]
-        self._cache.mark_seen_batch(new_ids)
+        self._cache.mark_seen_batch(cache_keys_for_posts(opportunities))
         self.stats["approved"] += len(opportunities)
-
-        logger.info("Final opportunities: %d", len(opportunities))
+        logger.info("Final Medium opportunities: %d", len(opportunities))
         return opportunities
 
     def generate_report(self, opportunities: List[Dict[str, Any]]) -> str:
@@ -195,7 +255,7 @@ class MediumScannerAgent:
             return "No Medium opportunities found in this scan."
 
         lines = [
-            f"# Medium Opportunity Scan Report — {len(opportunities)} found",
+            f"# Medium Opportunity Scan Report - {len(opportunities)} found",
             "",
         ]
         for i, opp in enumerate(opportunities, 1):
@@ -209,62 +269,40 @@ class MediumScannerAgent:
             lines.append(f"- **URL:** {opp.get('url', '')}")
             preview = opp.get("body", "")[:150]
             if preview:
-                lines.append(f"- **Preview:** {preview}…")
+                lines.append(f"- **Preview:** {preview}...")
             lines.append("")
 
         return "\n".join(lines)
 
-    # ── Pipeline steps ────────────────────────────────────────────────
-
-    def _fetch_all(
-        self, keywords: List[str], limit: int
-    ) -> List[Dict[str, Any]]:
+    def _fetch_all(self, keywords: List[str], limit: int) -> List[Dict[str, Any]]:
         all_posts: List[Dict[str, Any]] = []
-        seen_ids: set = set()
 
-        for kw in keywords:
+        for tag in keywords:
             try:
-                posts = self._provider.fetch_posts(query=kw, limit=limit)
-                for p in posts:
-                    pid = p.get("id", "")
-                    if pid not in seen_ids:
-                        seen_ids.add(pid)
-                        all_posts.append(p)
-                logger.info("Fetched %d articles for keyword '%s'", len(posts), kw)
+                posts = self._provider.fetch_posts(query=tag, limit=limit)
+                all_posts.extend(posts)
+                logger.info("Fetched %d Medium articles for tag '%s'", len(posts), tag)
+                if not posts:
+                    logger.info(
+                        "Medium tag returned 0 articles: tag=%s reason=empty_rss",
+                        tag,
+                    )
             except Exception as exc:
-                logger.error("Fetch failed for keyword '%s': %s", kw, exc)
+                logger.error("Fetch failed for Medium tag '%s': %s", tag, exc)
 
         return all_posts
 
-    def _deduplicate(
-        self, posts: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        """Remove posts already seen via CacheManager (ID-based dedup)."""
-        unique: List[Dict[str, Any]] = []
-        seen_in_batch: set = set()
-
-        for post in posts:
-            pid = post.get("id", "")
-            if not pid:
-                unique.append(post)
-                continue
-            if self._cache.has_seen(pid):
-                logger.debug("Skipping already-seen article: %s", pid)
-                continue
-            if pid in seen_in_batch:
-                continue
-            seen_in_batch.add(pid)
-            unique.append(post)
-
-        return unique
+    def _deduplicate(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Remove only exact duplicate IDs, exact duplicate URLs, and cache hits."""
+        return dedupe_exact_posts(
+            posts,
+            cache=self._cache,
+            logger=logger,
+            stage="medium",
+            platform="medium",
+        )
 
     def _extract_signals(self, article: Dict[str, Any]) -> List[str]:
-        """
-        Article-optimised signal extraction using keyword matching.
-
-        Medium articles tend to be longer and more structured than Reddit posts,
-        so signals are detected across the full body + title + tags.
-        """
         text = " ".join([
             article.get("title", ""),
             article.get("body", ""),
@@ -278,29 +316,19 @@ class MediumScannerAgent:
 
         return signals
 
-    # ── Filter configuration ──────────────────────────────────────────
-
     @staticmethod
     def _medium_filter_config() -> FilterConfig:
-        """
-        Return a FilterConfig tuned for Medium article-style content.
-
-        Medium articles tend to be long-form, so body-length threshold
-        is higher. Score threshold is lower since clap counts aren't
-        available and we derive a proxy score instead.
-        """
+        """Balanced defaults for RSS previews rather than full articles."""
         config = FilterConfig(
-            minimum_score=1,         # proxy scores start low
-            minimum_body_length=50,  # Medium RSS feeds return truncated previews, not full article bodies
+            minimum_score=0,
+            minimum_body_length=25,
         )
-        # Medium articles don't have subreddits; clear Reddit-specific rules
         config.blacklisted_subreddits = []
         config.bot_author_patterns = [
             r"b[o0]t",
             r"auto[-_]?generated",
             r"^test$",
         ]
-        # Override keep signals for article content
         config.help_keywords = [
             "how to", "guide", "tutorial", "step by step",
             "tips", "strategies", "best practices", "ways to",
@@ -318,7 +346,7 @@ class MediumScannerAgent:
         config.bottleneck_keywords = [
             "automat", "workflow", "scale", "bottleneck", "process",
             "time-consuming", "manual", "inefficient", "productivity",
-            "pipeline", "integration",
+            "pipeline", "integration", "schedule",
         ]
         return config
 

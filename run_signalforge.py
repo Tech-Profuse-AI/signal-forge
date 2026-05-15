@@ -256,7 +256,7 @@ def _boot_agents(*, live: bool) -> Dict[str, Any]:
 # Pipeline Execution
 # ==================================================================
 
-def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
+def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = None) -> Dict[str, Any]:
     """
     Execute the full SignalForge pipeline end-to-end.
 
@@ -295,8 +295,27 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
         compliance_agent=agents["compliance"],
     )
 
-    logger.info("  Executing pipeline ...")
-    state = workflow.invoke(query)
+    logger.info("  Executing pipeline (streaming) ...")
+    state = workflow.initial_state(query)
+
+    if progress_callback:
+        progress_callback("scanner", 0)
+
+    for output in workflow.graph.stream(state):
+        for node_name, node_update in output.items():
+            state.update(node_update)
+            if progress_callback:
+                next_stage_map = {
+                    "scanner": "intent",
+                    "intent": "scoring",
+                    "scoring": "product_knowledge",
+                    "product_knowledge": "drafting",
+                    "drafting": "compliance",
+                    "compliance": "complete",
+                }
+                next_stage = next_stage_map.get(node_name, node_name)
+                items_found = len(state.get("opportunities", []))
+                progress_callback(next_stage, items_found)
 
     # -- 3. Stage-by-stage log -----------------------------------------
     stages = [
@@ -336,8 +355,6 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
     enqueued_count = 0
     slack_sent_count = 0
 
-    # -- Phase 12: set up Slack HITL handler (mock mode) ---------------
-    from integrations.slack_actions import SlackActionsHandler
     from integrations.slack_client import SlackClient
 
     class _MockSlackWebClient:
@@ -348,9 +365,17 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
             self.calls.append(kwargs)
             return {"ok": True, "channel": kwargs.get("channel", ""), "ts": f"{len(self.calls)}.000100"}
 
-    mock_slack = _MockSlackWebClient()
-    slack_client = SlackClient(default_channel="#signalforge-review", client=mock_slack)
-    slack_handler = SlackActionsHandler(slack_client=slack_client, review_queue=review_queue)
+    test_mode = os.environ.get("TEST_MODE", "").lower() in {"1", "true", "yes", "on"}
+    if os.environ.get("SLACK_BOT_TOKEN") and not test_mode:
+        from slack_sdk import WebClient
+        slack_web_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+        logger.info("  Slack client: live (SLACK_BOT_TOKEN set)")
+    else:
+        slack_web_client = _MockSlackWebClient()
+        logger.info("  Slack client: mock (SLACK_BOT_TOKEN not set or TEST_MODE=true)")
+
+    slack_channel = os.environ.get("SLACK_CHANNEL_ID") or os.environ.get("SLACK_CHANNEL", "#signalforge-review")
+    slack_client = SlackClient(default_channel=slack_channel, client=slack_web_client)
 
     for item in approved_items:
         try:
@@ -358,7 +383,7 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
             enqueued_count += 1
             # Phase 12: also send Slack review card
             try:
-                slack_handler.send_review_item(item)
+                slack_client.send_notification(item)
                 slack_sent_count += 1
             except Exception as slack_exc:
                 logger.warning(
@@ -374,9 +399,69 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
             )
 
     queue_stats = review_queue.stats
+
+    # -- 6. Platform publishing ----------------------------------------
+    from integrations.publishing_coordinator import PublishingCoordinator
+
+    publish_mode = os.environ.get("SIGNALFORGE_PUBLISH_MODE", "dry_run").lower().strip()
+    published_count = 0
+    manual_count = 0
+    publish_failed_count = 0
+
+    # Filter items for auto-publishing
+    publishable_items = []
+    for item in approved_items:
+        opp = item.get("opportunity", {})
+        intent_data = item.get("intent", {})
+        platform = str(opp.get("platform", "")).lower()
+        intent_label = str(intent_data.get("intent", "")).lower()
+
+        # Extract score
+        score = 0
+        score_block = item.get("score")
+        if isinstance(score_block, dict):
+            try:
+                score = int(score_block.get("priority_score", 0))
+            except (ValueError, TypeError):
+                pass
+        else:
+            try:
+                score = int(opp.get("priority_score", 0))
+            except (ValueError, TypeError):
+                pass
+
+        if platform == "medium" or (intent_label == "buying_intent" and score >= 60):
+            publishable_items.append(item)
+
+    if publish_mode in ("dry_run", "mock"):
+        for item in publishable_items:
+            draft = item.get("draft", {})
+            opp = item.get("opportunity", {})
+            title = ""
+            if isinstance(draft, dict):
+                title = draft.get("title") or draft.get("subject") or ""
+            if not title and isinstance(opp, dict):
+                title = opp.get("title") or ""
+            title = title or "Untitled"
+            platform = ""
+            if isinstance(opp, dict):
+                platform = str(opp.get("platform", "")).lower()
+            logger.info(
+                "[DRY RUN] Would publish to %s: %s",
+                platform or "unknown", title,
+            )
+    elif publish_mode == "live":
+        coordinator = PublishingCoordinator()
+        pub_results = coordinator.publish_all(publishable_items)
+        published_count = len(pub_results.get("published", []))
+        manual_count = len(pub_results.get("manual_required", []))
+        publish_failed_count = len(pub_results.get("failed", []))
+    else:
+        logger.info("Publishing skipped (mode=%s)", publish_mode)
+
     wall_elapsed = time.time() - wall_start
 
-    # -- 6. Build summary ----------------------------------------------
+    # -- 7. Build summary ----------------------------------------------
     scanner_agent = agents["scanner"]
     source_metrics = {
         "reddit": scanner_agent.reddit_scanner.stats,
@@ -390,6 +475,9 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
         "approved": len(approved_items),
         "review_queue": queue_stats.get("pending", 0),
         "slack_sent": slack_sent_count,
+        "published_count": published_count,
+        "manual_count": manual_count,
+        "publish_failed": publish_failed_count,
         "failed": len(errors),
         "source_metrics": source_metrics,
     }
@@ -406,7 +494,7 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
         "review_queue_stats": queue_stats,
     }
 
-    # -- 7. Save to JSON ----------------------------------------------
+    # -- 8. Save to JSON ----------------------------------------------
     output_dir = PROJECT_ROOT / "outputs"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "final_results.json"
@@ -416,8 +504,17 @@ def run_pipeline(query: str, *, live: bool = False) -> Dict[str, Any]:
     )
     logger.info("  Results saved -> %s", output_path)
 
-    # -- 8. Print final summary ----------------------------------------
+    # -- 9. Print final summary ----------------------------------------
     _print_summary(summary, approved_items, queue_stats, wall_elapsed, live=live)
+
+    # -- 10. Slack pipeline-complete summary ----------------------------
+    _send_slack_summary(
+        query=query,
+        total=total_opportunities,
+        approved=len(approved_items),
+        approved_items=approved_items,
+        slack_web_client=slack_web_client,
+    )
 
     return full_output
 
@@ -443,6 +540,9 @@ def _print_summary(
     print(f"  Total opportunities : {summary['total_opportunities']}")
     print(f"  Processed           : {summary['processed']}")
     print(f"  Approved            : {summary['approved']}")
+    print(f"  Published           : {summary.get('published_count', 0)}")
+    print(f"  Manual required     : {summary.get('manual_count', 0)}")
+    print(f"  Publish failed      : {summary.get('publish_failed', 0)}")
     print(f"  Failed              : {summary['failed']}")
     print(f"  Review queue        : {summary['review_queue']}")
     print(f"  Slack cards sent    : {summary.get('slack_sent', 0)}")
@@ -472,6 +572,116 @@ def _print_summary(
     print(f"                      : {queue_stats.get('total', 0)} total")
     print("=" * 60)
     print()
+
+
+# ==================================================================
+# Slack Pipeline Summary
+# ==================================================================
+
+def _send_slack_summary(
+    *,
+    query: str,
+    total: int,
+    approved: int,
+    approved_items: List[Dict[str, Any]],
+    slack_web_client: Any,
+) -> None:
+    """
+    Post a single Block Kit summary message to Slack when the pipeline finishes.
+
+    If SLACK_BOT_TOKEN is not set (i.e. the client is the mock), log a warning
+    and return silently.
+    """
+    # Guard: skip when running with the mock client
+    test_mode = os.environ.get("TEST_MODE", "").lower() in {"1", "true", "yes", "on"}
+    if not os.environ.get("SLACK_BOT_TOKEN") or test_mode:
+        logger.warning(
+            "SLACK_BOT_TOKEN not set or TEST_MODE=true -- skipping Slack pipeline summary"
+        )
+        return
+
+    # -- Build top-items list (max 3, highest score first) -----------------
+    def _extract_score(item: Dict[str, Any]) -> int:
+        score_block = item.get("score")
+        if isinstance(score_block, dict):
+            try:
+                return int(score_block.get("priority_score", 0))
+            except (ValueError, TypeError):
+                return 0
+        try:
+            return int(item.get("opportunity", {}).get("priority_score", 0))
+        except (ValueError, TypeError):
+            return 0
+
+    sorted_items = sorted(approved_items, key=_extract_score, reverse=True)[:3]
+
+    top_lines: List[str] = []
+    for item in sorted_items:
+        opp = item.get("opportunity", {})
+        platform = str(opp.get("platform", "unknown")).capitalize()
+        title_raw = str(opp.get("title", opp.get("query", "Untitled")))
+        title = (title_raw[:57] + "...") if len(title_raw) > 60 else title_raw
+        score = _extract_score(item)
+        intent_block = item.get("intent", {})
+        intent_label = intent_block.get("intent", "unknown") if isinstance(intent_block, dict) else "unknown"
+        top_lines.append(f"• [{platform}] {title} — score: {score} — {intent_label}")
+
+    top_section = "\n".join(top_lines) if top_lines else "_No approved items._"
+
+    # -- Assemble Block Kit message ----------------------------------------
+    channel = os.environ.get("SLACK_CHANNEL_ID") or os.environ.get("SLACK_CHANNEL", "#signalforge-review")
+
+    blocks: List[Dict[str, Any]] = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "\U0001f3af SignalForge Pipeline Complete",
+                "emoji": True,
+            },
+        },
+        {
+            "type": "section",
+            "fields": [
+                {"type": "mrkdwn", "text": f"*Query*\n{query}"},
+                {"type": "mrkdwn", "text": f"*Results*\nFound: {total} opportunities → {approved} approved"},
+            ],
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Top items*\n{top_section}",
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "→ <http://localhost:5173|Open Dashboard>",
+            },
+        },
+    ]
+
+    fallback_text = (
+        f"\U0001f3af SignalForge Pipeline Complete\n"
+        f"Query: {query}\n"
+        f"Found: {total} opportunities → {approved} approved"
+    )
+
+    try:
+        slack_web_client.chat_postMessage(
+            channel=channel,
+            text=fallback_text,
+            blocks=blocks,
+            unfurl_links=False,
+            unfurl_media=False,
+        )
+        logger.info("Slack pipeline summary sent to %s", channel)
+    except Exception as exc:
+        logger.warning("Failed to send Slack pipeline summary: %s", exc)
 
 
 # ==================================================================

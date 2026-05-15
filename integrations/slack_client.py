@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, TypedDict
 from uuid import uuid4
 
@@ -65,14 +66,19 @@ class SlackClient:
             client = WebClient(token=token)
 
         self._client = client
-        self._default_channel = self._clean_text(default_channel or "")
+        self._default_channel = self._clean_text(
+            os.environ.get("SLACK_CHANNEL_ID")
+            or os.environ.get("SLACK_CHANNEL")
+            or default_channel
+            or ""
+        )
         logger.info(
             "SlackClient initialised - default_channel=%s",
             self._default_channel or "[unset]",
         )
 
-    def send_review(self, item: Dict[str, Any]) -> ReviewDispatchResult:
-        """Send a single review item to Slack."""
+    def send_notification(self, item: Dict[str, Any]) -> ReviewDispatchResult:
+        """Send a simple Slack notification for a new opportunity."""
         payload = self.build_review_payload(item)
         channel = self._resolve_channel(item)
         response = self._client.chat_postMessage(
@@ -86,13 +92,13 @@ class SlackClient:
         result: ReviewDispatchResult = {
             "review_id": payload["review_id"],
             "review_status": "pending",
-            "reviewer_action": "queued",
+            "reviewer_action": "notified",
             "final_draft": self._review_draft_text(item),
             "channel": channel,
             "message_ts": self._response_value(response, "ts"),
         }
         logger.info(
-            "Slack review sent - review_id=%s channel=%s ts=%s",
+            "Slack notification sent - review_id=%s channel=%s ts=%s",
             result["review_id"],
             channel,
             result["message_ts"] or "[unknown]",
@@ -100,195 +106,60 @@ class SlackClient:
         return result
 
     def send_batch(self, items: List[Dict[str, Any]]) -> List[ReviewDispatchResult]:
-        """Send a batch of review items to Slack sequentially."""
+        """Send a batch of notifications to Slack sequentially."""
         if not isinstance(items, list):
             raise TypeError(f"items must be a list, got {type(items).__name__}")
 
-        logger.info("Sending Slack review batch - %d items", len(items))
-        return [self.send_review(item) for item in items]
+        logger.info("Sending Slack notification batch - %d items", len(items))
+        return [self.send_notification(item) for item in items]
 
     def build_review_payload(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        """Build a Slack Block Kit payload for a review item."""
+        """Build a simple Slack notification payload for a review item."""
         if not self._is_valid_item(item):
             raise ValueError(
                 "Review item must include dict values for opportunity, draft, and compliance."
             )
 
-        review_id = self._resolve_review_id(item)
         opportunity = item.get("opportunity", {})
+        draft = item.get("draft", {})
         intent = self._intent_label(item)
         priority = self._priority_line(item)
         draft_text = self._review_draft_text(item)
-        compliance_status = self._compliance_line(item)
-        summary = self._opportunity_summary(opportunity)
-        title = self._clean_text(str(opportunity.get("title", ""))) or "Untitled opportunity"
-        subreddit = self._clean_text(str(opportunity.get("subreddit", ""))) or "unknown"
-        url = self._clean_text(str(opportunity.get("url", "")))
 
-        action_blocks = self._action_blocks(review_id)
-        blocks: List[Dict[str, Any]] = [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": "SignalForge Review Request",
-                },
-            },
+        platform = self._clean_text(str(opportunity.get("platform", ""))).upper() or "UNKNOWN"
+        title = self._clean_text(str(opportunity.get("title", ""))) or "Untitled opportunity"
+        title_display = self._truncate(title, 80)
+        url = self._clean_text(str(opportunity.get("url", "")))
+        
+        draft_preview = self._truncate(draft_text, 200)
+        
+        message_text = (
+            f"🎯 *New opportunity found*\n\n"
+            f"*Platform:* {platform}\n"
+            f"*Title:* {title_display}\n"
+            f"*Intent:* {intent}  |  *Score:* {priority}\n"
+            f"*URL:* {url}\n\n"
+            f"*Draft preview:*\n"
+            f"\"{draft_preview}...\"\n\n"
+            f"→ Review in dashboard: http://localhost:5173"
+        )
+
+        blocks = [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": (
-                        f"*Opportunity summary*\n{summary}\n\n"
-                        f"*Intent*\n{intent}\n\n"
-                        f"*Priority score*\n{priority}"
-                    ),
-                },
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": (
-                        f"*Draft*\n```{self._truncate(draft_text, 1400)}```\n\n"
-                        f"*Compliance status*\n{compliance_status}"
-                    ),
-                },
-            },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": (
-                            f"Review ID: `{review_id}` | "
-                            f"r/{subreddit} | "
-                            f"Title: {self._truncate(title, 90)}"
-                        ),
-                    }
-                ],
-            },
+                    "text": message_text
+                }
+            }
         ]
 
-        if url:
-            blocks.append(
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f"*Source thread*\n{url}",
-                    },
-                }
-            )
-
-        blocks.append(action_blocks)
-
         return {
-            "review_id": review_id,
-            "text": f"SignalForge review request {review_id}: {summary}",
+            "review_id": self._resolve_review_id(item),
+            "text": f"New opportunity on {platform}: {title_display}",
             "blocks": blocks,
         }
 
-    def handle_webhook_action(
-        self,
-        payload: Dict[str, Any],
-        review_queue: "ReviewQueue",
-    ) -> Dict[str, str]:
-        """
-        Handle an interactive Slack action and update the local review queue.
-
-        Supports raw queue-style payloads as well as Slack-style payloads with
-        an ``actions`` list whose first action contains a JSON ``value``.
-        """
-        action_payload = self._normalise_action_payload(payload)
-        result = review_queue.handle_action(action_payload)
-        logger.info(
-            "Handled Slack review action - review_id=%s action=%s status=%s",
-            action_payload["review_id"],
-            action_payload["action"],
-            result["review_status"],
-        )
-        return result
-
-    def _action_blocks(self, review_id: str) -> Dict[str, Any]:
-        buttons = []
-        for action, label, style in [
-            ("approve", "Approve", "primary"),
-            ("reject", "Reject", "danger"),
-            ("edit", "Edit", None),
-        ]:
-            button: Dict[str, Any] = {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": label,
-                },
-                "action_id": f"signalforge_{action}",
-                "value": json.dumps(
-                    {"review_id": review_id, "action": action},
-                    ensure_ascii=True,
-                ),
-            }
-            if style:
-                button["style"] = style
-            buttons.append(button)
-
-        return {
-            "type": "actions",
-            "elements": buttons,
-        }
-
-    def _normalise_action_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        if not isinstance(payload, dict):
-            raise TypeError(f"payload must be a dict, got {type(payload).__name__}")
-
-        action_payload: Dict[str, Any] = {
-            "review_id": self._clean_text(str(payload.get("review_id", ""))),
-            "action": self._clean_text(str(payload.get("action", ""))).lower(),
-            "edited_draft": self._clean_text(str(payload.get("edited_draft", ""))),
-            "reviewer": self._reviewer_name(payload),
-        }
-
-        actions = payload.get("actions", [])
-        if isinstance(actions, list) and actions:
-            first_action = actions[0] if isinstance(actions[0], dict) else {}
-            parsed = self._parse_action_value(first_action.get("value", ""))
-            action_payload["review_id"] = parsed.get("review_id") or action_payload["review_id"]
-            action_payload["action"] = parsed.get("action", action_payload["action"]).lower()
-
-        if action_payload["action"] not in VALID_REVIEW_ACTIONS:
-            raise ValueError(
-                f"Unsupported review action '{action_payload['action']}'. "
-                f"Expected one of: {', '.join(sorted(VALID_REVIEW_ACTIONS))}"
-            )
-        if not action_payload["review_id"]:
-            raise ValueError("Interactive review payload is missing review_id.")
-
-        return action_payload
-
-    @staticmethod
-    def _parse_action_value(value: Any) -> Dict[str, str]:
-        if isinstance(value, dict):
-            return {
-                "review_id": SlackClient._clean_text(str(value.get("review_id", ""))),
-                "action": SlackClient._clean_text(str(value.get("action", ""))).lower(),
-            }
-
-        text = SlackClient._clean_text(str(value))
-        if not text:
-            return {}
-
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
-            return {"action": text.lower()}
-
-        if not isinstance(parsed, dict):
-            return {}
-        return {
-            "review_id": SlackClient._clean_text(str(parsed.get("review_id", ""))),
-            "action": SlackClient._clean_text(str(parsed.get("action", ""))).lower(),
-        }
 
     def _resolve_channel(self, item: Dict[str, Any]) -> str:
         channel = self._clean_text(

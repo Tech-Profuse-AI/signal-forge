@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import inspect
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -100,7 +101,7 @@ class RedditScanner:
                 else:
                     posts = self._provider.fetch_posts(query=kw, limit=limit)
                 all_posts.extend(posts)
-                logger.info("Live scan: keyword='%s' → %d posts", kw, len(posts))
+                logger.info("Live scan: keyword='%s' -> %d posts", kw, len(posts))
             except Exception as exc:
                 logger.error("Live scan failed for '%s': %s", kw, exc)
         return all_posts
@@ -133,14 +134,23 @@ class RedditScanner:
             return posts
         for post in posts:
             text = f"{post.get('title', '')} {post.get('body', '')}".lower()
-            if any(kw in text for kw in kw_lower):
+            if any(self._keyword_matches_text(kw, text) for kw in kw_lower):
                 matched.append(post)
 
         logger.info(
-            "Mock scan: keywords=%s → %d/%d posts matched",
+            "Mock scan: keywords=%s -> %d/%d posts matched",
             keywords, len(matched), len(posts),
         )
         return matched
+
+    @staticmethod
+    def _keyword_matches_text(keyword: str, text: str) -> bool:
+        if keyword in text:
+            return True
+        terms = [term for term in re.split(r"\s+", keyword) if len(term) > 2]
+        if not terms:
+            return False
+        return any(term in text for term in terms)
 
     def _load_mock_data(self) -> List[Dict[str, Any]]:
         if not self._mock_path.exists():
