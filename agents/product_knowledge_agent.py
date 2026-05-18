@@ -13,6 +13,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from providers.vector_store import LocalChromaVectorStore
+from utils.semantic_relevance import company_capability_fit
 
 logger = logging.getLogger("signalforge.product_knowledge_agent")
 
@@ -22,6 +23,67 @@ _STOPWORDS = {
     "i", "in", "into", "is", "it", "its", "my", "need", "of", "on", "or",
     "our", "that", "the", "their", "this", "to", "us", "we", "with", "you",
     "your",
+}
+
+_CONTEXT_CATEGORIES: Dict[str, List[str]] = {
+    "product_positioning": [
+        "platform",
+        "authentic",
+        "engagement",
+        "position",
+        "differentiator",
+        "instead",
+        "unlike",
+    ],
+    "pricing": [
+        "pricing",
+        "price",
+        "plan",
+        "cost",
+        "budget",
+        "month",
+        "subscription",
+    ],
+    "capabilities": [
+        "capabilities",
+        "detect",
+        "discover",
+        "draft",
+        "monitor",
+        "prioritize",
+        "score",
+        "slack",
+        "workflow",
+    ],
+    "customer_pain_points": [
+        "challenge",
+        "pain",
+        "manual",
+        "hours",
+        "scale",
+        "bandwidth",
+        "impossible",
+        "bottleneck",
+    ],
+    "use_cases": [
+        "use case",
+        "marketing",
+        "lead generation",
+        "community",
+        "agency",
+        "developer",
+        "saas",
+    ],
+    "differentiators": [
+        "unlike",
+        "differentiator",
+        "human",
+        "approval",
+        "authentic",
+        "compliance",
+        "reddit",
+        "not a spam",
+    ],
 }
 
 
@@ -74,18 +136,26 @@ class ProductKnowledgeAgent:
         sources = list(dict.fromkeys(
             item["source"] for item in relevant_context if item.get("source")
         ))
-        summary = self._build_summary(query, relevant_context)
+        structured_context = self._build_structured_context(query, relevant_context)
+        fit_score, capability_matches = company_capability_fit(query)
+        summary = self._build_summary(query, relevant_context, structured_context)
 
         logger.info(
-            "Retrieved product context for [%s] - %d chunks, %d sources",
+            "Retrieved product context for [%s] - %d chunks, %d sources, fit=%.2f",
             opportunity.get("id", "unknown"),
             len(relevant_context),
             len(sources),
+            fit_score,
         )
         return {
             "relevant_context": relevant_context,
             "summary": summary,
             "sources": sources,
+            "structured_context": structured_context,
+            "knowledge_fit": {
+                "score": fit_score,
+                "capability_matches": capability_matches,
+            },
         }
 
     def _build_query(self, opportunity: Dict[str, Any]) -> str:
@@ -122,12 +192,23 @@ class ProductKnowledgeAgent:
         if priority_score is not None:
             parts.append(f"Priority score: {priority_score}")
 
+        fit_score, capability_matches = company_capability_fit(
+            " ".join([title, body, " ".join(str(item) for item in signals)])
+        )
+        if capability_matches:
+            parts.append(
+                "Company capability matches: "
+                + ", ".join(capability_matches)
+                + f" (fit {fit_score})"
+            )
+
         return "\n".join(parts).strip()
 
     def _build_summary(
         self,
         query: str,
         relevant_context: List[Dict[str, str]],
+        structured_context: Optional[Dict[str, List[str]]] = None,
     ) -> str:
         if not relevant_context:
             return "No relevant product knowledge found for this opportunity."
@@ -167,10 +248,61 @@ class ProductKnowledgeAgent:
         if not selected:
             selected.append(self._fallback_summary_sentence(relevant_context[0]["content"]))
 
-        summary = " ".join(selected)
+        summary_parts: List[str] = []
+        if structured_context:
+            for label, title in [
+                ("product_positioning", "Positioning"),
+                ("capabilities", "Capabilities"),
+                ("customer_pain_points", "Customer pains"),
+                ("use_cases", "Use cases"),
+                ("differentiators", "Differentiators"),
+                ("pricing", "Pricing"),
+            ]:
+                values = structured_context.get(label, [])
+                if values:
+                    summary_parts.append(f"{title}: {values[0]}")
+                elif label == "pricing":
+                    summary_parts.append("Pricing: no retrieved pricing details.")
+
+        summary_parts.append(" ".join(selected))
+        summary = " ".join(summary_parts)
         if len(summary) > 700:
             return summary[:697].rstrip() + "..."
         return summary
+
+    def _build_structured_context(
+        self,
+        query: str,
+        relevant_context: List[Dict[str, str]],
+    ) -> Dict[str, List[str]]:
+        structured: Dict[str, List[str]] = {
+            key: [] for key in _CONTEXT_CATEGORIES
+        }
+        query_terms = set(self._meaningful_terms(query))
+
+        for item in relevant_context:
+            source = item.get("source", "unknown")
+            for sentence in self._split_sentences(item.get("content", "")):
+                cleaned = sentence.strip()
+                if len(cleaned) < 30:
+                    continue
+                lowered = cleaned.lower()
+                overlap = sum(1 for term in query_terms if term in lowered)
+                for category, keywords in _CONTEXT_CATEGORIES.items():
+                    if not any(keyword in lowered for keyword in keywords):
+                        continue
+                    if overlap == 0 and category not in {"product_positioning", "differentiators", "pricing"}:
+                        continue
+                    entry = f"[{source}] {cleaned}"
+                    if entry not in structured[category]:
+                        structured[category].append(entry)
+                    if len(structured[category]) >= 3:
+                        break
+
+        return {
+            key: values[:3]
+            for key, values in structured.items()
+        }
 
     @staticmethod
     def _split_sentences(text: str) -> List[str]:
@@ -204,4 +336,3 @@ class ProductKnowledgeAgent:
             f"<ProductKnowledgeAgent top_k={self._top_k} "
             f"collection='{self._vector_store.collection_name}'>"
         )
-

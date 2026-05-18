@@ -95,7 +95,7 @@ def _build_classification_prompt(opportunity: Dict[str, Any]) -> str:
     body = opportunity.get("body", "")
     signals = opportunity.get("opportunity_signals", [])
     subreddit = opportunity.get("subreddit", "")
-    score = opportunity.get("score", 0)
+    score = opportunity.get("source_score", opportunity.get("score", 0))
 
     user_message = (
         f"Classify this Reddit post:\n\n"

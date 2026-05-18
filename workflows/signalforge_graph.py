@@ -12,8 +12,12 @@ existing agents and preserves structured metadata across all stages.
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+import inspect
+import threading
+import time
+from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, Iterator, List, Optional, Tuple, TypedDict
 
 import langchain_core.messages as langchain_messages
 import langchain_core.runnables.config as langchain_runnable_config
@@ -26,6 +30,7 @@ from agents.intent_agent import IntentAgent
 from agents.opportunity_scanner.agent import OpportunityScannerAgent
 from agents.product_knowledge_agent import ProductKnowledgeAgent
 from agents.scoring_agent import OpportunityScoringAgent
+from schemas.opportunity import serialize_opportunity
 
 logger = logging.getLogger("signalforge.graph")
 
@@ -79,12 +84,23 @@ CompliancePayload = Dict[str, Any]
 
 
 class FinalResult(TypedDict, total=False):
-    opportunity: OpportunityPayload
-    intent: IntentPayload
-    score: ScorePayload
-    knowledge: KnowledgePayload
-    draft: DraftPayload
-    compliance: CompliancePayload
+    id: str
+    opportunity_id: str
+    review_id: str
+    platform: str
+    title: str
+    url: str
+    draft: str
+    score: int
+    status: str
+    intent: str
+    confidence: int
+    summary: str
+    source: str
+    priority_label: str
+    compliance_approved: bool
+    risk_level: str
+    violations: List[str]
     review_state: str  # "paused" | "dropped" | "resumed"
 
 
@@ -110,6 +126,68 @@ class SignalForgeState(TypedDict):
     errors: NotRequired[List[PipelineError]]
     success_count: NotRequired[int]
     failure_count: NotRequired[int]
+    timings: NotRequired[Dict[str, Any]]
+
+
+class PipelineProfiler:
+    """Thread-safe stage timing collector for pipeline execution."""
+
+    def __init__(self, stage_logger: logging.Logger) -> None:
+        self._logger = stage_logger
+        self._lock = threading.Lock()
+        self._stats: Dict[str, Dict[str, float]] = {}
+
+    @contextmanager
+    def measure(
+        self,
+        stage: str,
+        opportunity_id: Optional[str] = None,
+        **metadata: Any,
+    ) -> Iterator[None]:
+        started = time.perf_counter()
+        try:
+            yield
+        finally:
+            elapsed_ms = (time.perf_counter() - started) * 1000.0
+            with self._lock:
+                stats = self._stats.setdefault(
+                    stage,
+                    {
+                        "count": 0.0,
+                        "total_ms": 0.0,
+                        "min_ms": elapsed_ms,
+                        "max_ms": 0.0,
+                    },
+                )
+                stats["count"] += 1.0
+                stats["total_ms"] += elapsed_ms
+                stats["min_ms"] = min(stats["min_ms"], elapsed_ms)
+                stats["max_ms"] = max(stats["max_ms"], elapsed_ms)
+
+            extra = " ".join(f"{key}={value}" for key, value in metadata.items())
+            self._logger.info(
+                "TIMING stage=%s opportunity_id=%s elapsed_ms=%.2f%s%s",
+                stage,
+                opportunity_id or "-",
+                elapsed_ms,
+                " " if extra else "",
+                extra,
+            )
+
+    def summary(self) -> Dict[str, Any]:
+        with self._lock:
+            out: Dict[str, Any] = {}
+            for stage, stats in self._stats.items():
+                count = int(stats["count"])
+                total_ms = stats["total_ms"]
+                out[stage] = {
+                    "count": count,
+                    "total_ms": round(total_ms, 2),
+                    "avg_ms": round(total_ms / count, 2) if count else 0.0,
+                    "min_ms": round(stats["min_ms"], 2),
+                    "max_ms": round(stats["max_ms"], 2),
+                }
+            return out
 
 
 class SignalForgeGraph:
@@ -127,6 +205,8 @@ class SignalForgeGraph:
         limit_per_keyword: int = 25,
         subreddit: Optional[str] = None,
         time_filter: str = "week",
+        progress_callback: Optional[Any] = None,
+        max_workers: int = 4,
     ) -> None:
         self._scanner_agent = scanner_agent
         self._intent_agent = intent_agent
@@ -137,6 +217,8 @@ class SignalForgeGraph:
         self._limit_per_keyword = limit_per_keyword
         self._subreddit = subreddit
         self._time_filter = time_filter
+        self._progress_callback = progress_callback
+        self._max_workers = max(1, int(max_workers))
 
         builder = StateGraph(
             SignalForgeState,
@@ -176,6 +258,7 @@ class SignalForgeGraph:
             "errors": [],
             "success_count": 0,
             "failure_count": 0,
+            "timings": {},
         }
 
     def invoke(self, query: str) -> SignalForgeState:
@@ -187,18 +270,434 @@ class SignalForgeGraph:
         """Run the full graph and return only the final structured results."""
         return self.invoke(query)["final_results"]
 
+    def run_progressive(self, query: str) -> SignalForgeState:
+        """Run an item-level progressive pipeline with concurrent safe stages."""
+        logger.info("progressive pipeline start")
+        logger.info(
+            "Concurrent execution plan: scanners=[reddit, quora, medium], "
+            "item_workers=%d, parallel_ops=[intent, scoring, drafting, compliance], "
+            "knowledge=serialized",
+            self._max_workers,
+        )
+
+        state = self.initial_state(query)
+        profiler = PipelineProfiler(logger)
+        errors: List[PipelineError] = []
+        discovered: List[OpportunityPayload] = []
+        final_results: List[FinalResult] = []
+        seen_keys: set[str] = set()
+        futures = []
+        knowledge_lock = threading.Lock()
+
+        with ThreadPoolExecutor(max_workers=self._max_workers) as pool:
+            for batch in self._scan_batches(query, profiler):
+                platform = str(batch.get("platform", "unknown"))
+                batch_error = batch.get("error")
+                if batch_error:
+                    errors.append({
+                        "stage": f"{platform}_scanner",
+                        "opportunity_id": None,
+                        "error": str(batch_error),
+                    })
+
+                batch_results = list(batch.get("results", []) or [])
+                for opportunity in self._dedupe_stream_batch(batch_results, seen_keys):
+                    discovered_opportunity = {
+                        **opportunity,
+                        "pipeline_state": "discovered",
+                    }
+                    discovered.append(discovered_opportunity)
+                    self._emit_opportunity_state(
+                        "discovered",
+                        opportunity=discovered_opportunity,
+                        platform=platform,
+                        timings=profiler.summary(),
+                    )
+                    futures.append(
+                        pool.submit(
+                            self._process_opportunity_progressive,
+                            discovered_opportunity,
+                            knowledge_lock,
+                            profiler,
+                        )
+                    )
+
+            for future in as_completed(futures):
+                try:
+                    item_result = future.result()
+                except Exception as exc:
+                    logger.exception("progressive item worker failed")
+                    errors.append(self._build_error("progressive_worker", None, exc))
+                    continue
+
+                errors.extend(item_result.get("errors", []))
+                final_result = item_result.get("final_result")
+                if final_result:
+                    final_results.append(final_result)
+
+        actionable_results = [
+            item for item in final_results
+            if item.get("review_state") in {"paused", "dropped"}
+        ]
+        opportunities = list(actionable_results)
+        intent_results = [
+            {
+                "intent": item.get("intent", ""),
+                "confidence": item.get("confidence", 0) / 100
+                if isinstance(item.get("confidence", 0), (int, float))
+                else 0,
+            }
+            for item in actionable_results
+        ]
+        scored_results = [
+            {
+                "priority_score": item.get("score", 0),
+                "priority_label": item.get("priority_label", ""),
+            }
+            for item in actionable_results
+        ]
+        knowledge_results = [
+            {"summary": item.get("summary", "")}
+            for item in actionable_results
+        ]
+        draft_results = [
+            {
+                "draft": item.get("draft", ""),
+                "tone": item.get("tone", ""),
+                "cta": item.get("cta", ""),
+                "reasoning": item.get("reasoning", ""),
+            }
+            for item in actionable_results
+        ]
+        compliance_results = [
+            {
+                "approved": item.get("compliance_approved", False),
+                "risk_level": item.get("risk_level", ""),
+                "violations": item.get("violations", []),
+                "recommendation": item.get("recommendation", ""),
+            }
+            for item in actionable_results
+        ]
+        success_count = sum(
+            1 for item in compliance_results if item.get("approved") is True
+        )
+        failure_count = sum(
+            1
+            for item in compliance_results
+            if item.get("approved") is False and item.get("violations")
+        )
+
+        state.update({
+            "opportunities": opportunities,
+            "intent_results": intent_results,
+            "scored_results": scored_results,
+            "knowledge_results": knowledge_results,
+            "draft_results": draft_results,
+            "compliance_results": compliance_results,
+            "final_results": actionable_results,
+            "errors": errors,
+            "success_count": success_count,
+            "failure_count": failure_count,
+            "timings": profiler.summary(),
+        })
+        self._emit_progress(
+            "complete",
+            len(opportunities),
+            {
+                "event": "pipeline_complete",
+                "discovered_count": len(discovered),
+                "processed_count": len(actionable_results),
+                "approved_count": success_count,
+                "failure_count": failure_count,
+                "timings": state["timings"],
+            },
+        )
+        logger.info(
+            "progressive pipeline end - discovered=%d processed=%d approved=%d failed=%d",
+            len(discovered),
+            len(actionable_results),
+            success_count,
+            failure_count,
+        )
+        return state
+
+    def _scan_batches(
+        self,
+        query: str,
+        profiler: PipelineProfiler,
+    ) -> Iterator[Dict[str, Any]]:
+        keywords = [query] if query.strip() else None
+        scan_kwargs = {
+            "keywords": keywords,
+            "limit_per_keyword": self._limit_per_keyword,
+            "subreddit": self._subreddit,
+            "time_filter": self._time_filter,
+        }
+
+        if hasattr(self._scanner_agent, "scan_platform_batches"):
+            with profiler.measure("scanner_total"):
+                for batch in self._scanner_agent.scan_platform_batches(**scan_kwargs):
+                    platform = str(batch.get("platform", "unknown"))
+                    results = list(batch.get("results", []) or [])
+                    elapsed_ms = batch.get("elapsed_ms")
+                    payload = {
+                        "event": "platform_batch",
+                        "platform": platform,
+                        "count": len(results),
+                        "items": results[:5],
+                        "elapsed_ms": elapsed_ms,
+                    }
+                    if batch.get("error"):
+                        payload["error"] = batch["error"]
+                    self._emit_progress(
+                        f"{platform}_partial",
+                        len(results),
+                        payload,
+                    )
+                    yield batch
+            return
+
+        try:
+            signature = inspect.signature(self._scanner_agent.scan)
+            if "progress_callback" in signature.parameters:
+                scan_kwargs["progress_callback"] = self._progress_callback
+        except (TypeError, ValueError):
+            pass
+
+        with profiler.measure("scanner_total"):
+            try:
+                results = self._scanner_agent.scan(**scan_kwargs)
+                yield {"platform": "all", "results": results}
+            except Exception as exc:
+                logger.exception("scanner phase failed")
+                yield {"platform": "all", "results": [], "error": str(exc)}
+
+    def _process_opportunity_progressive(
+        self,
+        opportunity: OpportunityPayload,
+        knowledge_lock: threading.Lock,
+        profiler: PipelineProfiler,
+    ) -> Dict[str, Any]:
+        errors: List[PipelineError] = []
+        opportunity_id = str(opportunity.get("id", "unknown"))
+
+        try:
+            with profiler.measure("intent", opportunity_id):
+                intent = self._intent_agent.classify(opportunity)
+        except Exception as exc:
+            logger.exception("intent phase failed for [%s]", opportunity_id)
+            errors.append(self._build_error("intent", opportunity.get("id"), exc))
+            intent = self._intent_fallback(str(exc))
+
+        if intent.get("intent") == "ignore":
+            self._emit_opportunity_state(
+                "dropped",
+                opportunity=opportunity,
+                intent=intent,
+                timings=profiler.summary(),
+            )
+            return {"final_result": None, "errors": errors}
+
+        scoring_input = {**opportunity, **intent}
+        try:
+            with profiler.measure("scoring", opportunity_id):
+                score = self._scoring_agent.score(scoring_input)
+        except Exception as exc:
+            logger.exception("scoring phase failed for [%s]", opportunity_id)
+            errors.append(self._build_error("scoring", opportunity.get("id"), exc))
+            score = self._scoring_fallback()
+
+        self._emit_opportunity_state(
+            "classified",
+            opportunity=opportunity,
+            intent=intent,
+            score=score,
+            timings=profiler.summary(),
+        )
+
+        ranked_opportunity = {
+            **opportunity,
+            **intent,
+            **score,
+            "_scoring": score,
+        }
+        try:
+            with knowledge_lock:
+                with profiler.measure("product_knowledge", opportunity_id):
+                    knowledge = self._product_knowledge_agent.get_context(ranked_opportunity)
+        except Exception as exc:
+            logger.exception("product_knowledge phase failed for [%s]", opportunity_id)
+            errors.append(
+                self._build_error("product_knowledge", opportunity.get("id"), exc)
+            )
+            knowledge = self._knowledge_fallback(str(exc))
+
+        draft_input = {
+            "opportunity": opportunity,
+            "intent_data": intent,
+            "score_data": score,
+            "knowledge_context": knowledge,
+        }
+        try:
+            with profiler.measure("drafting", opportunity_id):
+                draft = self._drafting_agent.generate_draft(draft_input)
+        except Exception as exc:
+            logger.exception("drafting phase failed for [%s]", opportunity_id)
+            errors.append(self._build_error("drafting", opportunity.get("id"), exc))
+            draft = self._draft_fallback(str(exc))
+
+        self._emit_opportunity_state(
+            "drafted",
+            opportunity=opportunity,
+            intent=intent,
+            score=score,
+            knowledge=knowledge,
+            draft=draft,
+            timings=profiler.summary(),
+        )
+
+        try:
+            with profiler.measure("compliance", opportunity_id):
+                compliance = self._compliance_agent.validate(draft)
+        except Exception as exc:
+            logger.exception("compliance phase failed for [%s]", opportunity_id)
+            errors.append(self._build_error("compliance", opportunity.get("id"), exc))
+            compliance = self._compliance_fallback(str(exc))
+
+        approved = compliance.get("approved", False)
+        pipeline_state = "approved" if approved else "drafted"
+        review_state = "paused" if approved else "dropped"
+        final_result: FinalResult = serialize_opportunity({
+            **opportunity,
+            "intent": intent,
+            "score": score,
+            "knowledge": knowledge,
+            "draft": draft,
+            "compliance": compliance,
+            "review_state": review_state,
+            "pipeline_state": pipeline_state,
+            "status": pipeline_state,
+        }, pipeline_state=pipeline_state, can_mutate=False)
+        self._emit_opportunity_state(
+            pipeline_state,
+            opportunity=final_result,
+            intent=intent,
+            score=score,
+            knowledge=knowledge,
+            draft=draft,
+            compliance=compliance,
+            review_state=review_state,
+            timings=profiler.summary(),
+        )
+        return {"final_result": final_result, "errors": errors}
+
+    def _emit_opportunity_state(
+        self,
+        pipeline_state: str,
+        *,
+        opportunity: OpportunityPayload,
+        platform: Optional[str] = None,
+        intent: Optional[IntentPayload] = None,
+        score: Optional[ScorePayload] = None,
+        knowledge: Optional[KnowledgePayload] = None,
+        draft: Optional[DraftPayload] = None,
+        compliance: Optional[CompliancePayload] = None,
+        review_state: Optional[str] = None,
+        timings: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        source: Dict[str, Any] = {
+            **opportunity,
+            "pipeline_state": pipeline_state,
+            "status": pipeline_state,
+        }
+        if platform is not None:
+            source["platform"] = platform
+        if intent is not None:
+            source["intent"] = intent
+        if score is not None:
+            source["score"] = score
+        if knowledge is not None:
+            source["knowledge"] = knowledge
+        if draft is not None:
+            source["draft"] = draft
+        if compliance is not None:
+            source["compliance"] = compliance
+        if review_state is not None:
+            source["review_state"] = review_state
+        payload: Dict[str, Any] = {
+            "event": "opportunity_state",
+            **serialize_opportunity(
+                source,
+                pipeline_state=pipeline_state,
+                can_mutate=False,
+            ),
+        }
+        if timings is not None:
+            payload["timings"] = timings
+        self._emit_progress(pipeline_state, 0, payload)
+
+    def _emit_progress(
+        self,
+        stage: str,
+        items_found: int,
+        payload: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if self._progress_callback is None:
+            return
+        try:
+            self._progress_callback(stage, items_found, payload)
+        except TypeError:
+            self._progress_callback(stage, items_found)
+
+    @staticmethod
+    def _dedupe_stream_batch(
+        opportunities: List[OpportunityPayload],
+        seen_keys: set[str],
+    ) -> Iterator[OpportunityPayload]:
+        for opportunity in opportunities:
+            keys = SignalForgeGraph._stream_dedupe_keys(opportunity)
+            if keys and any(key in seen_keys for key in keys):
+                logger.info(
+                    "DEDUP SKIP: platform=%s stage=progressive id=%s url=%s reason=duplicate_stream_key",
+                    opportunity.get("platform", "-"),
+                    opportunity.get("id", "-"),
+                    opportunity.get("url", "-"),
+                )
+                continue
+            seen_keys.update(keys)
+            yield dict(opportunity)
+
+    @staticmethod
+    def _stream_dedupe_keys(opportunity: OpportunityPayload) -> set[str]:
+        platform = str(opportunity.get("platform", "unknown")).strip().lower()
+        post_id = str(opportunity.get("id", "")).strip()
+        url = str(opportunity.get("url", "")).strip().lower()
+        keys: set[str] = set()
+        if post_id:
+            keys.add(f"id:{platform}:{post_id}")
+        if url:
+            keys.add(f"url:{url}")
+        return keys
+
     def scanner_node(self, state: SignalForgeState) -> Dict[str, Any]:
         logger.info("scanner phase start")
         errors = list(state.get("errors", []))
 
         try:
             keywords = [state["query"]] if state["query"].strip() else None
-            opportunities = self._scanner_agent.scan(
-                keywords=keywords,
-                limit_per_keyword=self._limit_per_keyword,
-                subreddit=self._subreddit,
-                time_filter=self._time_filter,
-            )
+            scan_kwargs = {
+                "keywords": keywords,
+                "limit_per_keyword": self._limit_per_keyword,
+                "subreddit": self._subreddit,
+                "time_filter": self._time_filter,
+            }
+            try:
+                signature = inspect.signature(self._scanner_agent.scan)
+                if "progress_callback" in signature.parameters:
+                    scan_kwargs["progress_callback"] = self._progress_callback
+            except (TypeError, ValueError):
+                pass
+            opportunities = self._scanner_agent.scan(**scan_kwargs)
         except Exception as exc:
             logger.exception("scanner phase failed")
             errors.append(self._build_error("scanner", None, exc))
@@ -389,15 +888,18 @@ class SignalForgeGraph:
             else:
                 review_state = "dropped"  # compliance rejected
 
-            final_results.append({
-                "opportunity": opportunity,
+            pipeline_state = "approved" if review_state == "paused" else "drafted"
+            final_results.append(serialize_opportunity({
+                **opportunity,
                 "intent": intent,
                 "score": score,
                 "knowledge": knowledge,
                 "draft": draft,
                 "compliance": compliance,
                 "review_state": review_state,
-            })
+                "pipeline_state": pipeline_state,
+                "status": pipeline_state,
+            }, pipeline_state=pipeline_state, can_mutate=False))
 
         success_count = sum(
             1 for item in compliance_results if item.get("approved") is True
@@ -530,11 +1032,17 @@ class SignalForgeGraph:
         dropped: List[FinalResult] = []
 
         for result in final_results:
-            opp_id = result.get("opportunity", {}).get("id", "")
+            legacy_opp = result.get("opportunity", {})
+            opp_id = (
+                result.get("opportunity_id")
+                or result.get("id")
+                or (legacy_opp.get("id", "") if isinstance(legacy_opp, dict) else "")
+            )
             # Try matching by review-<opp_id> convention or direct id
             record = (
                 queue_items.get(f"review-{opp_id}")
                 or queue_items.get(opp_id)
+                or queue_items.get(str(result.get("review_id", "")))
             )
             if record is None:
                 continue  # not in queue -- skip
@@ -543,6 +1051,7 @@ class SignalForgeGraph:
             if status in ("approved", "edited"):
                 updated = {**result, "review_state": "resumed"}
                 if status == "edited" and record.get("final_draft"):
+                    updated["draft"] = record["final_draft"]
                     updated["final_draft"] = record["final_draft"]
                 resumed.append(updated)
             elif status == "rejected":
@@ -563,6 +1072,8 @@ def build_signalforge_graph(
     limit_per_keyword: int = 25,
     subreddit: Optional[str] = None,
     time_filter: str = "week",
+    progress_callback: Optional[Any] = None,
+    max_workers: int = 4,
 ) -> SignalForgeGraph:
     """Factory helper for creating the executable SignalForge graph."""
     return SignalForgeGraph(
@@ -575,6 +1086,8 @@ def build_signalforge_graph(
         limit_per_keyword=limit_per_keyword,
         subreddit=subreddit,
         time_filter=time_filter,
+        progress_callback=progress_callback,
+        max_workers=max_workers,
     )
 
 

@@ -91,15 +91,12 @@ class RedditScanner:
         all_posts: List[Dict[str, Any]] = []
         for kw in keywords:
             try:
-                if self._provider_accepts_keyword():
-                    posts = self._provider.fetch_posts(
-                        keyword=kw,
-                        limit=limit,
-                        subreddit=subreddit,
-                        time_filter=time_filter,
-                    )
-                else:
-                    posts = self._provider.fetch_posts(query=kw, limit=limit)
+                posts = self._fetch_provider_posts(
+                    keyword=kw,
+                    limit=limit,
+                    subreddit=subreddit,
+                    time_filter=time_filter,
+                )
                 all_posts.extend(posts)
                 logger.info("Live scan: keyword='%s' -> %d posts", kw, len(posts))
             except Exception as exc:
@@ -119,6 +116,36 @@ class RedditScanner:
             "keyword" in parameters
             or any(param.kind == param.VAR_KEYWORD for param in parameters.values())
         )
+
+    def _fetch_provider_posts(
+        self,
+        *,
+        keyword: str,
+        limit: int,
+        subreddit: Optional[str],
+        time_filter: str,
+    ) -> List[Dict[str, Any]]:
+        try:
+            signature = inspect.signature(self._provider.fetch_posts)
+            parameters = signature.parameters
+            accepts_kwargs = any(
+                param.kind == param.VAR_KEYWORD for param in parameters.values()
+            )
+        except (TypeError, ValueError):
+            parameters = {}
+            accepts_kwargs = True
+
+        kwargs: Dict[str, Any] = {"limit": limit}
+        if "keyword" in parameters or accepts_kwargs:
+            kwargs["keyword"] = keyword
+        else:
+            kwargs["query"] = keyword
+        if subreddit and ("subreddit" in parameters or accepts_kwargs):
+            kwargs["subreddit"] = subreddit
+        if time_filter and ("time_filter" in parameters or accepts_kwargs):
+            kwargs["time_filter"] = time_filter
+
+        return self._provider.fetch_posts(**kwargs)
 
     def _scan_mock(
         self, keywords: List[str]

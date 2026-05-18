@@ -1,179 +1,455 @@
-"""
-SignalForge URL Validator & Cleaner.
+"""Production URL normalization and validation for SignalForge.
 
-Reusable utilities for cleaning, normalising, and validating post URLs
-across all supported platforms (Reddit, Quora, Medium).
+The scanner layer sees URLs from RSS feeds, search results, redirect wrappers,
+API clients, mock fixtures, and persisted review queue records.  This module is
+the single authority for turning those inputs into frontend-safe opportunity
+links.
 """
 
 from __future__ import annotations
 
+import html
 import logging
 import re
-from typing import Optional, Tuple
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from typing import Tuple
+from urllib.parse import parse_qsl, quote, unquote, urlencode, urlparse, urlunparse
 
 logger = logging.getLogger("signalforge.url_validator")
 
-# Reddit fullname type prefixes
-# t1_ = comment, t2_ = account, t3_ = post/link, t4_ = message, t5_ = subreddit
+UrlResult = Tuple[str, bool]
+
 _REDDIT_ENTITY_PREFIX_RE = re.compile(r"^t[12345]_", re.IGNORECASE)
 _REDDIT_POST_PREFIX_RE = re.compile(r"^t3_", re.IGNORECASE)
-_REDDIT_TRACKING_PARAMS = {
-    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-    "ref", "ref_source", "share_id", "context", "rdt", "$deep_link",
-    "correlation_id", "ref_campaign",
+_REDDIT_ENTITY_PATH_RE = re.compile(r"^/t[12345]_[a-z0-9]+/?$", re.IGNORECASE)
+_REDDIT_COMMENT_ID_RE = re.compile(r"^[a-z0-9]+$", re.IGNORECASE)
+
+_COMMON_TRACKING_PARAMS = {
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "utm_id",
+    "utm_name",
+    "fbclid",
+    "gclid",
+    "msclkid",
+    "igshid",
+    "mc_cid",
+    "mc_eid",
+    "ref",
+    "ref_src",
+    "ref_source",
+    "referrer",
+    "source",
+    "share",
+    "share_id",
+    "tracking",
+    "trk",
+    "sk",
+}
+
+_REDDIT_TRACKING_PARAMS = _COMMON_TRACKING_PARAMS | {
+    "context",
+    "rdt",
+    "$deep_link",
+    "correlation_id",
+    "ref_campaign",
+}
+
+_QUORA_TRACKING_PARAMS = _COMMON_TRACKING_PARAMS | {
+    "ch",
+    "oid",
+    "srid",
+    "st",
+}
+
+_MEDIUM_TRACKING_PARAMS = _COMMON_TRACKING_PARAMS | {
+    "gi",
+    "postpublishedtype",
+    "readingcollectionid",
+    "responsesopen",
+}
+
+_REDIRECT_PARAM_NAMES = (
+    "url",
+    "u",
+    "q",
+    "target",
+    "to",
+    "link",
+    "redirect",
+    "redirect_url",
+    "destination",
+    "continue",
+    "uddg",
+)
+
+_REDIRECT_HOST_HINTS = (
+    "duckduckgo.",
+    "google.",
+    "bing.",
+    "out.reddit.com",
+    "l.facebook.com",
+    "t.co",
+    "lnkd.in",
+)
+
+_QUORA_REJECT_PREFIXES = (
+    "/about",
+    "/answer",
+    "/contact",
+    "/digest",
+    "/following",
+    "/notifications",
+    "/profile/",
+    "/q/",
+    "/search",
+    "/sitemap",
+    "/spaces",
+    "/topic/",
+)
+
+_MEDIUM_REJECT_PREFIXES = (
+    "/about",
+    "/archive",
+    "/feed",
+    "/followers",
+    "/following",
+    "/jobs",
+    "/latest",
+    "/m/signin",
+    "/membership",
+    "/me/",
+    "/policy",
+    "/search",
+    "/tag/",
+    "/topic/",
+)
+
+_MEDIUM_NON_ARTICLE_SEGMENTS = {
+    "about",
+    "archive",
+    "feed",
+    "followers",
+    "following",
+    "jobs",
+    "latest",
+    "lists",
+    "m",
+    "me",
+    "membership",
+    "policy",
+    "search",
+    "tag",
+    "topic",
 }
 
 
-def clean_url(url: str, platform: str) -> str:
-    """Clean and normalise a URL for the given platform.
-
-    Strips tracking parameters, forces HTTPS, and applies
-    platform-specific transformations.
-    """
-    if not url or not isinstance(url, str):
+def _clean_raw_url(value: object) -> str:
+    if value is None or not isinstance(value, str):
         return ""
+    url = html.unescape(value).strip().strip("\"'")
+    if not url:
+        return ""
+    if url.startswith("//"):
+        url = f"https:{url}"
+    return url
 
-    url = url.strip()
 
-    # Force HTTPS
-    url = re.sub(r"^http://", "https://", url)
+def _safe_parse(url: str):
+    try:
+        return urlparse(url)
+    except Exception:
+        return None
 
-    # Strip fragment
-    url = url.split("#")[0]
 
-    # --- Platform-specific cleaning ---
+def _is_http_url(url: str) -> bool:
+    parsed = _safe_parse(url)
+    return bool(parsed and parsed.scheme in {"http", "https"} and parsed.netloc)
 
-    if platform == "reddit":
-        # Strip all query params (Reddit URLs don't need them)
-        url = url.split("?")[0]
 
-        # Normalise old.reddit.com and redd.it
-        url = url.replace("old.reddit.com", "www.reddit.com")
-        url = url.replace("np.reddit.com", "www.reddit.com")
+def _unwrap_redirect(raw_url: str, *, max_depth: int = 4) -> str:
+    """Extract the destination from common redirect/search wrapper URLs."""
+    url = _clean_raw_url(raw_url)
+    seen = set()
 
-        # Remove /amp/ segments
-        url = url.replace("/amp/", "/")
-        url = re.sub(r"\?amp\b[^&]*", "", url)
+    for _ in range(max_depth):
+        if not url or url in seen:
+            return url
+        seen.add(url)
 
-        # Ensure www. prefix for consistency
-        url = re.sub(r"https://reddit\.com/", "https://www.reddit.com/", url)
+        parsed = _safe_parse(url)
+        if not parsed or not parsed.query:
+            return url
 
-    elif platform == "quora":
-        # Strip tracking params
-        url = url.split("?")[0]
+        host = parsed.netloc.lower()
+        params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        should_probe = any(hint in host for hint in _REDIRECT_HOST_HINTS)
+        should_probe = should_probe or any(name in params for name in _REDIRECT_PARAM_NAMES)
+        if not should_probe:
+            return url
 
-        # Force www.quora.com
-        url = re.sub(
-            r"https://quora\.com/",
-            "https://www.quora.com/",
-            url,
-        )
+        next_url = ""
+        for name in _REDIRECT_PARAM_NAMES:
+            candidate = params.get(name, "")
+            candidate = unquote(candidate).strip()
+            if _is_http_url(candidate):
+                next_url = candidate
+                break
 
-    elif platform == "medium":
-        # Strip all query params (Medium adds ?source= tracking)
-        url = url.split("?")[0]
-
-    # Strip trailing slashes
-    url = url.rstrip("/")
+        if not next_url:
+            return url
+        url = next_url
 
     return url
 
 
-def is_valid_post_url(url: str, platform: str) -> bool:
-    """Return True only if URL points to an actual post on the platform."""
-    if not url or len(url) < 20:
+def _canonical_netloc(netloc: str) -> str:
+    return netloc.lower().split("@")[-1].split(":")[0].strip()
+
+
+def _clean_path(path: str) -> str:
+    path = unquote(path or "")
+    path = re.sub(r"/{2,}", "/", path)
+    if not path.startswith("/"):
+        path = f"/{path}"
+    return path
+
+
+def _encode_path(path: str) -> str:
+    return quote(path, safe="/:@~!$&'()*+,;=-._")
+
+
+def _strip_trailing_slash(url: str) -> str:
+    if url == "https://www.reddit.com/":
+        return url
+    return url.rstrip("/")
+
+
+def _query_without_tracking(query: str, blocked_params: set[str]) -> str:
+    if not query:
+        return ""
+    kept = []
+    for key, value in parse_qsl(query, keep_blank_values=True):
+        if key.lower() in blocked_params or key.lower().startswith("utm_"):
+            continue
+        kept.append((key, value))
+    return urlencode(kept, doseq=True)
+
+
+def normalize_reddit_url(url: object) -> UrlResult:
+    raw = _unwrap_redirect(_clean_raw_url(url))
+    if not raw:
+        return "", False
+
+    parsed = _safe_parse(re.sub(r"^http://", "https://", raw, flags=re.IGNORECASE))
+    if not parsed or parsed.scheme not in {"http", "https"}:
+        return raw, False
+
+    netloc = _canonical_netloc(parsed.netloc)
+    path = _clean_path(parsed.path).replace("/amp/", "/")
+
+    if netloc == "redd.it":
+        post_id = path.strip("/").split("/", 1)[0]
+        if not _REDDIT_COMMENT_ID_RE.fullmatch(post_id or ""):
+            return raw, False
+        return f"https://www.reddit.com/comments/{post_id.lower()}", True
+
+    if netloc in {"reddit.com", "old.reddit.com", "np.reddit.com", "new.reddit.com", "m.reddit.com"}:
+        netloc = "www.reddit.com"
+
+    if netloc != "www.reddit.com":
+        return raw, False
+
+    lowered_path = path.lower()
+    if _REDDIT_ENTITY_PATH_RE.match(path):
+        logger.info("REJECTED Reddit entity URL: %s", raw)
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
+
+    if lowered_path.startswith(("/user/", "/u/")):
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
+
+    if re.fullmatch(r"/r/[^/]+/?", path, re.IGNORECASE):
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
+
+    parts = [part for part in path.split("/") if part]
+    canonical_path = ""
+    if len(parts) >= 2 and parts[0].lower() == "comments":
+        post_id = parts[1]
+        if not _REDDIT_COMMENT_ID_RE.fullmatch(post_id):
+            return raw, False
+        canonical_path = f"/comments/{post_id.lower()}"
+    elif len(parts) >= 4 and parts[0].lower() == "r" and parts[2].lower() == "comments":
+        subreddit = parts[1]
+        post_id = parts[3]
+        if not subreddit or not _REDDIT_COMMENT_ID_RE.fullmatch(post_id):
+            return raw, False
+        slug = parts[4] if len(parts) >= 5 else ""
+        canonical_path = f"/r/{subreddit}/comments/{post_id.lower()}"
+        if slug:
+            canonical_path = f"{canonical_path}/{slug}"
+    else:
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
+
+    normalised = urlunparse(("https", netloc, _encode_path(canonical_path), "", "", ""))
+    return _strip_trailing_slash(normalised), True
+
+
+def _is_quora_question_slug(slug: str) -> bool:
+    if not slug or len(slug) < 5:
         return False
-
-    try:
-        parsed = urlparse(url)
-    except Exception:
+    if slug.lower().startswith("deleted-question"):
         return False
-
-    if not parsed.scheme or not parsed.netloc:
+    if "/" in slug or "." in slug:
         return False
+    return "-" in slug
 
-    if platform == "reddit":
-        # Must be a www.reddit.com post URL with /comments/
-        if parsed.netloc not in ("www.reddit.com", "reddit.com"):
-            return False
 
-        path = parsed.path
+def normalize_quora_url(url: object) -> UrlResult:
+    raw = _unwrap_redirect(_clean_raw_url(url))
+    if not raw:
+        return "", False
 
-        # Reject any Reddit entity URLs like /t5_XXXXX, /t3_XXXXX, /t1_XXXXX
-        # These are fullname identifiers, NOT permalinks
-        if re.match(r"/t[12345]_[a-z0-9]+", path, re.IGNORECASE):
-            return False
+    parsed = _safe_parse(re.sub(r"^http://", "https://", raw, flags=re.IGNORECASE))
+    if not parsed or parsed.scheme not in {"http", "https"}:
+        return raw, False
 
-        # Reject /user/ profile URLs
-        if path.startswith("/user/") or path.startswith("/u/"):
-            return False
+    netloc = _canonical_netloc(parsed.netloc)
+    if netloc == "quora.com":
+        netloc = "www.quora.com"
+    if netloc != "www.quora.com":
+        return raw, False
 
-        # Must contain /comments/ to be an actual post
-        if "/comments/" not in path:
-            return False
+    path = _clean_path(parsed.path)
+    lowered_path = path.lower()
+    if any(lowered_path == prefix.rstrip("/") or lowered_path.startswith(prefix) for prefix in _QUORA_REJECT_PREFIXES):
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
 
-        # Reject bare subreddit URLs /r/name with no post ID
-        if re.match(r"^/r/[^/]+/?$", path):
-            return False
+    parts = [part for part in path.split("/") if part]
+    if not parts:
+        return f"https://{netloc}", False
 
+    question_slug = parts[0]
+    if not _is_quora_question_slug(question_slug):
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
+
+    # Quora answer URLs are usable, but the opportunity source should open the
+    # stable question page.  The answer body is still captured separately.
+    canonical_path = f"/{question_slug}"
+    normalised = urlunparse(("https", netloc, _encode_path(canonical_path), "", "", ""))
+    return _strip_trailing_slash(normalised), True
+
+
+def _medium_custom_domain_candidate(netloc: str, path: str) -> bool:
+    if netloc.endswith("medium.com"):
+        return False
+    parts = [part for part in path.split("/") if part]
+    if len(parts) >= 2 and parts[0].startswith("@"):
+        return _is_medium_article_slug(parts[1])
+    if len(parts) >= 2 and parts[0].lower() == "p":
+        return bool(parts[1])
+    return bool(parts and _is_medium_article_slug(parts[-1]))
+
+
+def _is_medium_article_slug(slug: str) -> bool:
+    candidate = (slug or "").strip("/")
+    if not candidate:
+        return False
+    lowered = candidate.lower()
+    if lowered in _MEDIUM_NON_ARTICLE_SEGMENTS:
+        return False
+    if "." in candidate:
+        return False
+    if "-" in candidate and len(candidate) >= 8:
         return True
-
-    if platform == "quora":
-        # Must be www.quora.com, NOT a subdomain like indianpoliticsnculture.quora.com
-        if parsed.netloc != "www.quora.com":
-            return False
-
-        path = parsed.path
-        # Reject profile, topic, news, search, sitemap pages
-        rejected_prefixes = (
-            "/profile/", "/topic/", "/news/", "/search/", "/sitemap",
-        )
-        if any(path.startswith(p) for p in rejected_prefixes):
-            return False
-
-        # Must have a meaningful path (a question slug)
-        if len(path) <= 5:
-            return False
-
-        return True
-
-    if platform == "medium":
-        # Must be medium.com or a custom domain with article indicators
-        if "medium.com" in parsed.netloc:
-            # Reject bare https://medium.com with no article path
-            if len(parsed.path) <= 1:
-                return False
-            return True
-
-        # Custom domain articles (e.g., towardsdatascience.com/@user/...)
-        if "/@" in url or "/p/" in url:
-            return len(url) > 25
-
-        return False
-
-    # Unknown platform — accept by default
-    return True
+    return bool(re.search(r"[a-z0-9]{6,}$", candidate, re.IGNORECASE))
 
 
-def reconstruct_reddit_url(entry_id: str) -> str:
-    """Build a canonical Reddit URL from a t3_POSTID entry ID.
+def normalize_medium_url(url: object) -> UrlResult:
+    raw = _unwrap_redirect(_clean_raw_url(url))
+    if not raw:
+        return "", False
 
-    Only accepts ``t3_`` (post/link) identifiers.  All other Reddit
-    fullname types (``t1_`` comment, ``t2_`` account, ``t4_`` message,
-    ``t5_`` subreddit) are rejected because they do not represent
-    individual post permalinks.
+    parsed = _safe_parse(re.sub(r"^http://", "https://", raw, flags=re.IGNORECASE))
+    if not parsed or parsed.scheme not in {"http", "https"}:
+        return raw, False
+
+    netloc = _canonical_netloc(parsed.netloc)
+    if netloc == "www.medium.com":
+        netloc = "medium.com"
+
+    path = _clean_path(parsed.path)
+    lowered_path = path.lower()
+    if any(lowered_path == prefix.rstrip("/") or lowered_path.startswith(prefix) for prefix in _MEDIUM_REJECT_PREFIXES):
+        return _strip_trailing_slash(urlunparse(("https", netloc, path, "", "", ""))), False
+
+    parts = [part for part in path.split("/") if part]
+    if not parts:
+        return f"https://{netloc}", False
+
+    valid = False
+    if netloc == "medium.com" or netloc.endswith(".medium.com"):
+        if parts[0].startswith("@"):
+            valid = len(parts) >= 2 and _is_medium_article_slug(parts[1])
+        elif parts[0].lower() == "p":
+            valid = len(parts) >= 2 and bool(parts[1])
+        elif netloc == "medium.com":
+            valid = len(parts) >= 2 and _is_medium_article_slug(parts[-1])
+        else:
+            valid = _is_medium_article_slug(parts[-1])
+    else:
+        valid = _medium_custom_domain_candidate(netloc, path)
+
+    normalised = urlunparse(("https", netloc, _encode_path(path), "", "", ""))
+    return _strip_trailing_slash(normalised), valid
+
+
+def normalize_url(url: object, platform: str) -> UrlResult:
+    """Normalize and validate a platform URL.
 
     Returns:
-        A ``https://www.reddit.com/comments/{post_id}`` URL for valid
-        ``t3_`` IDs, or an empty string for anything else.
+        A tuple of ``(normalized_url, is_valid)``.  Invalid URLs may return a
+        cleaned display value for logging, but callers must respect
+        ``is_valid=False`` and keep the URL out of public opportunity payloads.
     """
+    platform_key = str(platform or "").strip().lower()
+    if platform_key == "reddit":
+        return normalize_reddit_url(url)
+    if platform_key == "quora":
+        return normalize_quora_url(url)
+    if platform_key == "medium":
+        return normalize_medium_url(url)
+
+    raw = _unwrap_redirect(_clean_raw_url(url))
+    if not raw:
+        return "", False
+    parsed = _safe_parse(re.sub(r"^http://", "https://", raw, flags=re.IGNORECASE))
+    if not parsed or parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return raw, False
+    query = _query_without_tracking(parsed.query, _COMMON_TRACKING_PARAMS)
+    normalised = urlunparse(("https", _canonical_netloc(parsed.netloc), _encode_path(_clean_path(parsed.path)), "", query, ""))
+    return _strip_trailing_slash(normalised), True
+
+
+def clean_url(url: object, platform: str) -> str:
+    """Backward-compatible cleaner returning only the normalized URL string."""
+    cleaned, _valid = normalize_url(url, platform)
+    return cleaned
+
+
+def is_valid_post_url(url: object, platform: str) -> bool:
+    """Return True only when ``url`` is a usable post/article URL."""
+    _cleaned, valid = normalize_url(url, platform)
+    return valid
+
+
+def reconstruct_reddit_url(entry_id: object) -> str:
+    """Build a canonical Reddit post URL from a ``t3_`` or bare post ID."""
     if not entry_id or not isinstance(entry_id, str):
         return ""
 
     entry_id = entry_id.strip()
-
-    # Reject non-post Reddit entity IDs (t1_, t2_, t4_, t5_)
     if _REDDIT_ENTITY_PREFIX_RE.match(entry_id):
         if not _REDDIT_POST_PREFIX_RE.match(entry_id):
             logger.info(
@@ -181,116 +457,31 @@ def reconstruct_reddit_url(entry_id: str) -> str:
                 entry_id,
             )
             return ""
-        # It's a valid t3_ post ID — extract the ID portion
-        post_id = entry_id[3:]  # strip "t3_"
+        post_id = entry_id[3:]
     elif "_" in entry_id:
-        # Unknown prefix with underscore — reject for safety
         logger.debug("REJECTED unknown entity ID format: %s", entry_id)
         return ""
     else:
-        # Bare ID (no prefix) — accept as-is
         post_id = entry_id
 
-    if not post_id or not re.match(r"^[a-z0-9]+$", post_id, re.IGNORECASE):
+    if not post_id or not _REDDIT_COMMENT_ID_RE.fullmatch(post_id):
         return ""
 
-    return f"https://www.reddit.com/comments/{post_id}"
+    return f"https://www.reddit.com/comments/{post_id.lower()}"
 
 
-def normalize_reddit_url(url: str) -> Tuple[str, bool]:
-    """Centralised Reddit URL normalisation and validation.
-
-    Responsibilities:
-      - Strip tracking params (utm_*, ref, share_id, etc.)
-      - Normalise domain to ``www.reddit.com``
-      - Remove /amp/ segments
-      - Validate permalink structure (must contain ``/comments/``)
-      - Reject invalid entities (t5_, user profiles, bare subreddit URLs)
-
-    Args:
-        url: Raw URL string.
-
-    Returns:
-        ``(normalised_url, is_valid)`` tuple.
-    """
-    if not url or not isinstance(url, str):
-        return "", False
-
-    url = url.strip()
-
-    # Force HTTPS
-    url = re.sub(r"^http://", "https://", url)
-
-    # Parse
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        return url, False
-
-    # Must be a reddit.com domain
-    netloc = parsed.netloc.lower()
-    if "reddit.com" not in netloc and netloc != "redd.it":
-        return url, False
-
-    # Normalise domain
-    netloc = re.sub(r"^(old|np|new|i|m|amp)\.reddit\.com$", "www.reddit.com", netloc)
-    if netloc == "reddit.com":
-        netloc = "www.reddit.com"
-
-    # Clean path
-    path = parsed.path
-    path = path.replace("/amp/", "/")
-    path = re.sub(r"//+", "/", path)  # collapse double slashes
-
-    # Strip tracking query params
-    if parsed.query:
-        params = parse_qs(parsed.query, keep_blank_values=True)
-        cleaned_params = {
-            k: v for k, v in params.items()
-            if k.lower() not in _REDDIT_TRACKING_PARAMS
-        }
-        query = urlencode(cleaned_params, doseq=True) if cleaned_params else ""
-    else:
-        query = ""
-
-    # Reconstruct (drop fragment)
-    normalised = urlunparse(("https", netloc, path, "", query, ""))
-    normalised = normalised.rstrip("/")
-
-    # Validate
-    is_valid = is_valid_post_url(normalised, "reddit")
-
-    if not is_valid:
-        logger.info("REJECTED invalid Reddit URL: %s", url)
-
-    return normalised, is_valid
+def validate_and_clean(url: object, platform: str) -> UrlResult:
+    """Backward-compatible alias for the centralized normalizer."""
+    return normalize_url(url, platform)
 
 
-def validate_and_clean(url: str, platform: str) -> Tuple[str, bool]:
-    """Clean a URL and validate it.
-
-    Returns:
-        (cleaned_url, is_valid) tuple.
-    """
-    if platform == "reddit":
-        return normalize_reddit_url(url)
-    cleaned = clean_url(url, platform)
-    valid = is_valid_post_url(cleaned, platform)
-    return cleaned, valid
-
-
-def is_valid_reddit_entry_id(entry_id: str) -> bool:
-    """Return True if the entry_id represents a Reddit post (t3_).
-
-    Returns False for subreddit IDs (t5_), comment IDs (t1_), etc.
-    """
+def is_valid_reddit_entry_id(entry_id: object) -> bool:
+    """Return True if an RSS entry id can represent a Reddit post."""
     if not entry_id or not isinstance(entry_id, str):
         return False
     entry_id = entry_id.strip()
-    # If it has a tN_ prefix, it must be t3_
     if _REDDIT_ENTITY_PREFIX_RE.match(entry_id):
         return bool(_REDDIT_POST_PREFIX_RE.match(entry_id))
-    # Bare ID or URL — accept
     return True
 
 
@@ -298,7 +489,10 @@ __all__ = [
     "clean_url",
     "is_valid_post_url",
     "is_valid_reddit_entry_id",
+    "normalize_medium_url",
+    "normalize_quora_url",
     "normalize_reddit_url",
+    "normalize_url",
     "reconstruct_reddit_url",
     "validate_and_clean",
 ]

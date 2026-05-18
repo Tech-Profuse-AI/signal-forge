@@ -16,7 +16,10 @@ def test_review_queue_json_fallback_round_trip(tmp_path: Path):
     path = tmp_path / ".review_queue.json"
     q = ReviewQueue(queue_path=str(path))
     item = {
-        "opportunity": {"id": "o1"},
+        "id": "o1",
+        "platform": "reddit",
+        "title": "Need help with workflow automation",
+        "url": "https://www.reddit.com/r/SaaS/comments/abc123/help",
         "draft": {"draft": "hello", "cta": ""},
         "compliance": {"approved": True, "safe_draft": "hello"},
     }
@@ -46,9 +49,29 @@ def test_review_queue_supabase_mocked_does_not_break(tmp_path: Path, monkeypatch
 
     q = ReviewQueue(queue_path=str(path))
     item = {
-        "opportunity": {"id": "o1"},
+        "id": "o1",
+        "platform": "reddit",
+        "title": "Need help with workflow automation",
+        "url": "https://www.reddit.com/r/SaaS/comments/abc123/help",
         "draft": {"draft": "hello", "cta": ""},
         "compliance": {"approved": True, "safe_draft": "hello"},
     }
     q.enqueue(item)
     assert path.exists()
+
+
+def test_review_queue_rejects_invalid_persisted_url(tmp_path: Path):
+    path = tmp_path / ".review_queue.json"
+    q = ReviewQueue(queue_path=str(path))
+
+    with pytest.raises(ValueError):
+        q.enqueue({
+            "id": "bad-url",
+            "platform": "reddit",
+            "title": "Subreddit entity",
+            "url": "https://www.reddit.com/t5_gj6rto",
+            "draft": {"draft": "hello", "cta": ""},
+            "compliance": {"approved": True, "safe_draft": "hello"},
+        })
+
+    assert q.items == []

@@ -23,6 +23,8 @@ from typing import Any, Dict, Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
+from utils.url_validator import normalize_url
+
 logger = logging.getLogger("signalforge.quora_post")
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -88,11 +90,11 @@ class QuoraPostProvider:
             ValueError: If inputs are empty or the question URL is
                         unreachable (when validation is enabled).
         """
-        clean_url = str(question_url).strip()
+        clean_url, url_valid = normalize_url(question_url, "quora")
         clean_draft = str(draft_text).strip()
 
-        if not clean_url:
-            raise ValueError("question_url is required.")
+        if not url_valid or not clean_url:
+            raise ValueError("question_url must be a valid Quora question URL.")
         if not clean_draft:
             raise ValueError("draft_text is required.")
 

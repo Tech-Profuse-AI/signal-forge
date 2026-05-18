@@ -47,7 +47,7 @@ class Settings:
                 env_path,
             )
         else:
-            load_dotenv(dotenv_path=env_path, override=True)
+            load_dotenv(dotenv_path=env_path, override=False)
             logger.info("Loaded environment from %s", env_path)
 
         # ── LLM Provider ──────────────────────────────────────────────

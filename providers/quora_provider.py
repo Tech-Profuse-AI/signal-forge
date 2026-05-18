@@ -31,13 +31,14 @@ import logging
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus, urlparse
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
-from utils.url_validator import validate_and_clean
+from utils.url_validator import normalize_url
 
 logger = logging.getLogger("signalforge.quora")
 
@@ -114,7 +115,7 @@ class QuoraProvider:
         and always returns the canonical Quora schema.
         """
         raw_url = raw.get("url", "")
-        cleaned_url, is_valid = validate_and_clean(raw_url, "quora")
+        cleaned_url, is_valid = normalize_url(raw_url, "quora")
 
         if not is_valid:
             logger.debug("Skipping invalid Quora URL: %s", raw_url)
@@ -155,7 +156,10 @@ class QuoraProvider:
         # Fall back to all posts if nothing matches — useful for broad tests
         pool = matched if matched else raw_posts
 
-        posts = [self.normalize(p) for p in pool[:limit]]
+        posts = [
+            post for post in (self.normalize(p) for p in pool[:limit])
+            if post.get("url_valid", True)
+        ]
         logger.info(
             "Mock fetch: query='%s' -> %d/%d posts returned",
             query, len(posts), len(raw_posts),
@@ -172,21 +176,23 @@ class QuoraProvider:
            Falls back to lightweight HTML meta parsing when crawling is unavailable.
         4. Normalise and return.
 
-        Crawl targets are capped at 5 to stay under 90s total runtime.
+        Crawl targets are capped at 2 and fetched concurrently to stay under
+        the Quora runtime budget.
         """
         raw_urls = self._search_quora_urls(query, limit)
 
         # --- Pre-crawl URL filtering ---
         urls: List[str] = []
         for raw_url in raw_urls:
-            cleaned, valid = validate_and_clean(raw_url, "quora")
+            cleaned, valid = normalize_url(raw_url, "quora")
             if valid:
                 urls.append(cleaned)
             else:
                 logger.debug("Skipping Quora URL before crawl: %s", raw_url)
 
-        # Cap crawl targets to avoid >90s runtime with Firecrawl
-        max_crawl = min(5, limit)
+        # Cap crawl targets: top Quora results carry most of the useful
+        # question intent, and crawling is the slowest scanner operation.
+        max_crawl = min(2, limit)
         crawl_urls = urls[:max_crawl]
         logger.info(
             "Discovered %d Quora URLs for '%s' — valid %d — crawling %d",
@@ -194,23 +200,29 @@ class QuoraProvider:
         )
 
         posts: List[Dict[str, Any]] = []
-        for idx, url in enumerate(crawl_urls, 1):
-            try:
-                logger.info("Crawling %d/%d: %s", idx, len(crawl_urls), url)
-                raw = self._crawl_quora_page(url) or self._parse_quora_page(url)
-                if raw:
-                    body = raw.get("body", "")
-                    if len(body.strip()) < 25:
-                        logger.info(
-                            "Quora page has short body; passing to scanner filter: body_len=%d url=%s",
-                            len(body.strip()), url,
-                        )
-                    normalised = self.normalize(raw)
-                    if normalised.get("url_valid", True):
-                        posts.append(normalised)
-                time.sleep(self._request_delay)
-            except Exception as exc:
-                logger.warning("Failed to parse %s: %s", url, exc)
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = {
+                pool.submit(self._crawl_or_parse_quora_page, url): url
+                for url in crawl_urls
+            }
+            for future in as_completed(futures):
+                url = futures[future]
+                if len(posts) >= max_crawl:
+                    continue
+                try:
+                    raw = future.result(timeout=8)
+                    if raw:
+                        body = raw.get("body", "")
+                        if len(body.strip()) < 25:
+                            logger.info(
+                                "Quora page has short body; passing to scanner filter: body_len=%d url=%s",
+                                len(body.strip()), url,
+                            )
+                        normalised = self.normalize(raw)
+                        if normalised.get("url_valid", True):
+                            posts.append(normalised)
+                except Exception as exc:
+                    logger.warning("Failed to parse %s: %s", url, exc)
 
         # If live discovery is blocked/unavailable, fall back to mock data to keep
         # downstream agents functioning in offline/test-like environments.
@@ -222,6 +234,13 @@ class QuoraProvider:
             "Live fetch: query='%s' -> %d posts", query, len(posts)
         )
         return posts
+
+    def _crawl_or_parse_quora_page(self, url: str) -> Optional[Dict[str, Any]]:
+        logger.info("Crawling Quora URL: %s", url)
+        raw = self._crawl_quora_page(url) or self._parse_quora_page(url)
+        if self._request_delay > 0:
+            time.sleep(min(self._request_delay, 0.25))
+        return raw
 
     def _search_quora_urls(self, query: str, limit: int) -> List[str]:
         """
@@ -257,7 +276,7 @@ class QuoraProvider:
                     "engine": "google",
                     "num": limit,
                 },
-                timeout=10,
+                timeout=8,
                 headers={"User-Agent": _USER_AGENT},
             )
             resp.raise_for_status()
@@ -266,8 +285,9 @@ class QuoraProvider:
             urls: List[str] = []
             for result in data.get("organic_results", []):
                 url = result.get("link", "")
-                if "quora.com/q/" in url or "/What-" in url or "/How-" in url:
-                    urls.append(url)
+                cleaned, valid = normalize_url(url, "quora")
+                if valid and cleaned not in urls:
+                    urls.append(cleaned)
             return urls[:limit]
 
         except Exception as exc:
@@ -294,7 +314,7 @@ class QuoraProvider:
                     "User-Agent": _USER_AGENT,
                 },
             )
-            with urlopen(req, timeout=15) as resp:
+            with urlopen(req, timeout=8) as resp:
                 raw = resp.read().decode("utf-8", errors="replace")
 
             data = json.loads(raw)
@@ -304,9 +324,9 @@ class QuoraProvider:
             urls: List[str] = []
             for item in data.get("data", []):
                 url = item.get("url", "")
-                if re.search(r"/[A-Z][^/]*[-][^/]+", urlparse(url).path):
-                    if url not in urls:
-                        urls.append(url)
+                cleaned, valid = normalize_url(url, "quora")
+                if valid and cleaned not in urls:
+                    urls.append(cleaned)
                 if len(urls) >= limit:
                     break
                     
@@ -335,7 +355,7 @@ class QuoraProvider:
                     "User-Agent": _USER_AGENT,
                     "Accept-Language": "en-US,en;q=0.9",
                 },
-                timeout=12,
+                timeout=8,
             )
             resp.raise_for_status()
 
@@ -347,10 +367,9 @@ class QuoraProvider:
             )
             for match in href_pattern.finditer(resp.text):
                 url = match.group(1)
-                # Keep only question pages, skip profile/topic pages
-                if re.search(r"/[A-Z][^/]*[-][^/]+", urlparse(url).path):
-                    if url not in urls:
-                        urls.append(url)
+                cleaned, valid = normalize_url(url, "quora")
+                if valid and cleaned not in urls:
+                    urls.append(cleaned)
                 if len(urls) >= limit:
                     break
 
@@ -383,7 +402,7 @@ class QuoraProvider:
                     "Accept": "text/html,application/xhtml+xml",
                     "Accept-Language": "en-US,en;q=0.9",
                 },
-                timeout=12,
+                timeout=8,
             )
             resp.raise_for_status()
             html = resp.text
@@ -449,7 +468,7 @@ class QuoraProvider:
         extracted = _extract_quora_from_firecrawl(payload, url)
         return extracted or None
 
-    def _firecrawl_scrape(self, *, url: str, api_key: str, timeout: int = 25) -> Dict[str, Any]:
+    def _firecrawl_scrape(self, *, url: str, api_key: str, timeout: int = 8) -> Dict[str, Any]:
         """
         Firecrawl scrape call (mock in tests).
 

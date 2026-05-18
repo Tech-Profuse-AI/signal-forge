@@ -21,6 +21,8 @@ import shutil
 import sys
 from pathlib import Path
 
+import pytest
+
 # -- Ensure project root on sys.path -----------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -43,6 +45,7 @@ REVIEW_QUEUE_FILE = OUTPUTS_DIR / ".review_queue.json"
 # Backup paths in case outputs already exist
 _BACKUP_RESULTS = OUTPUTS_DIR / "_backup_final_results.json"
 _BACKUP_QUEUE = OUTPUTS_DIR / "_backup_review_queue.json"
+_PIPELINE_RESULT = None
 
 
 def _backup_existing():
@@ -65,6 +68,20 @@ def _restore_existing():
         _BACKUP_QUEUE.rename(REVIEW_QUEUE_FILE)
 
 
+def _get_pipeline_result():
+    global _PIPELINE_RESULT
+    if _PIPELINE_RESULT is None:
+        from run_signalforge import run_pipeline
+
+        _PIPELINE_RESULT = run_pipeline("AI automation workflow pain points")
+    return _PIPELINE_RESULT
+
+
+@pytest.fixture(scope="module")
+def result():
+    return _get_pipeline_result()
+
+
 # ==================================================================
 # Test 1 -- Full pipeline execution
 # ==================================================================
@@ -75,9 +92,7 @@ def test_full_pipeline_execution():
     print("  TEST 1: Full pipeline execution")
     print("=" * 60)
 
-    from run_signalforge import run_pipeline
-
-    result = run_pipeline("AI automation workflow pain points")
+    result = _get_pipeline_result()
 
     # Basic shape
     assert isinstance(result, dict), "run_pipeline must return a dict"
@@ -95,14 +110,13 @@ def test_full_pipeline_execution():
 
     print("  [OK] Pipeline returned valid output dict")
     print("  -- TEST 1 PASSED --")
-    return result
 
 
 # ==================================================================
 # Test 2 -- Output file creation
 # ==================================================================
 
-def test_output_file_creation():
+def test_output_file_creation(result: dict):
     """outputs/final_results.json is created and is valid JSON."""
     print("\n" + "=" * 60)
     print("  TEST 2: Output file creation")
@@ -122,7 +136,6 @@ def test_output_file_creation():
     print(f"  [OK] Output file exists: {RESULTS_FILE}")
     print(f"  [OK] Valid JSON, size: {file_size:,} bytes")
     print("  -- TEST 2 PASSED --")
-    return data
 
 
 # ==================================================================
@@ -220,27 +233,27 @@ def test_review_queue_populated(result: dict):
 # ==================================================================
 
 def test_approved_items_structure(result: dict):
-    """Each approved item contains all six pipeline stage keys."""
+    """Each approved item contains the canonical flat opportunity shape."""
     print("\n" + "=" * 60)
     print("  TEST 5: Approved items structure")
     print("=" * 60)
 
     approved = result.get("approved_items", [])
     required_stage_keys = {
-        "opportunity", "intent", "score", "knowledge", "draft", "compliance",
+        "url", "draft", "score", "platform", "title", "status",
     }
 
     for i, item in enumerate(approved):
         missing = required_stage_keys - set(item.keys())
         assert not missing, (
-            f"Approved item {i} is missing stage keys: {missing}"
+            f"Approved item {i} is missing canonical keys: {missing}"
         )
-        assert item["compliance"].get("approved") is True, (
-            f"Approved item {i} should have compliance.approved == True"
+        assert item.get("compliance_approved") is True, (
+            f"Approved item {i} should have compliance_approved == True"
         )
 
     print(f"  [OK] {len(approved)} approved item(s) validated")
-    print(f"  [OK] All items contain keys: {sorted(required_stage_keys)}")
+    print(f"  [OK] All items contain canonical keys: {sorted(required_stage_keys)}")
     print("  -- TEST 5 PASSED --")
 
 

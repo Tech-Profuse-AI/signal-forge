@@ -15,6 +15,7 @@ import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
 from config.settings import Settings
+from utils.url_validator import normalize_url
 
 logger = logging.getLogger("signalforge.platform_publishers")
 
@@ -146,6 +147,14 @@ class QuoraPublisher(BasePublisher):
                 "platform": self.platform,
                 "published_url": None,
                 "status": "error: QUORA_QUESTION_URL not set and no opportunity url",
+            }
+        question_url, question_url_valid = normalize_url(question_url, "quora")
+        if not question_url_valid:
+            return {
+                "success": False,
+                "platform": self.platform,
+                "published_url": None,
+                "status": "error: invalid Quora question URL",
             }
 
         draft = item.get("draft", {})
@@ -412,6 +421,13 @@ class MediumPublisher(BasePublisher):
         url_str = str(published_url) if published_url else ""
         if not url_str:
             url_str = f"https://medium.com/p/{medium_post_id}"
+        url_str, url_valid = normalize_url(url_str, "medium")
+        if not url_valid:
+            return _medium_failure(
+                "error: Medium API returned an invalid article URL",
+                url=url_str,
+                post_id=str(medium_post_id),
+            )
 
         status_label = f"published:{publish_status}"
         return _medium_success(status_label, url_str, str(medium_post_id))

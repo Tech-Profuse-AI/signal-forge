@@ -17699,6 +17699,2266 @@
       "created_at": "2026-05-15T15:19:46+00:00",
       "dequeued_at": "",
       "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_001-25",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_001",
+        "title": "How do I automate social media replies without sounding robotic?",
+        "body": "I need help building a workflow for Reddit, LinkedIn, and Twitter replies. Manual engagement takes too long and I want a tool that can draft helpful responses for review without sounding like spam.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock001/automate_social_media_replies/",
+        "score": 24,
+        "author": "growth_operator",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.57,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.28,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.6,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.84
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:21:54+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_009-23",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_009",
+        "title": "AI moderation workflow cannot keep up",
+        "body": "Our community is getting 500 posts a day and manual moderation does not scale. Need advice on AI-powered moderation tools, automod rules, and triage workflows.",
+        "url": "https://www.reddit.com/r/community/comments/mock009/content_moderation_scale/",
+        "score": 33,
+        "author": "community_builder",
+        "subreddit": "community",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.633,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.28,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:21:55+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_002-25",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_002",
+        "title": "Best AI tool for content workflow and brand voice?",
+        "body": "I've tried a few AI writing tools but they feel generic. Looking for something that understands brand voice, drafts Reddit-safe replies, and fits into an approval workflow.",
+        "url": "https://www.reddit.com/r/artificial/comments/mock002/best_ai_tool_content/",
+        "score": 18,
+        "author": "brand_builder",
+        "subreddit": "artificial",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "recommendation_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.553,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.35,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:21:56+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_005-24",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_005",
+        "title": "Agency pain points managing Reddit engagement at scale",
+        "body": "We manage 12 client accounts and the bottleneck is finding relevant conversations, writing non-corporate responses, tracking which threads we already answered, and reporting ROI. This is becoming unsustainable.",
+        "url": "https://www.reddit.com/r/digitalmarketing/comments/mock005/agency_pain_points/",
+        "score": 41,
+        "author": "agency_ops",
+        "subreddit": "digitalmarketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.581,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.89,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.73,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:21:58+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_011-26",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_011",
+        "title": "Frustrated with scheduling tools because none support Reddit well",
+        "body": "Every social media scheduling tool treats Reddit like another broadcast channel. I need keyword monitoring, context-aware draft replies, engagement history, and a workflow that respects subreddit culture.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock011/scheduling_tools_reddit/",
+        "score": 52,
+        "author": "reddit_marketer",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.519,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "churn_risk",
+        "confidence": 0.87,
+        "reasoning": "The user sounds frustrated with current tooling.",
+        "business_relevance": "High - possible switch opportunity.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 64.98,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 35.04,
+          "engagement_score": 3.47,
+          "signal_boost": 10.0,
+          "urgency_boost": 10.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:21:58+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_f47c688301",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_f47c688301",
+        "platform": "medium",
+        "title": "How I Automated My Marketing Workflow With AI",
+        "body": "I was manually scheduling posts, drafting captions, tracking replies, and building reports every week. The workflow was repetitive and time-consuming, so I built an AI automation pipeline that drafts content, finds engagement opportunities, and queues posts for review.",
+        "url": "https://medium.com/@signalforge/how-i-automated-marketing-workflow-abc123def001",
+        "url_valid": true,
+        "score": 87,
+        "author": "Sarah Chen",
+        "tags": [
+          "automation",
+          "marketing",
+          "ai",
+          "workflow",
+          "productivity"
+        ],
+        "published_at": "Mon, 15 Apr 2024 09:00:00 GMT",
+        "opportunity_signals": [
+          "workflow_pain",
+          "tool_evaluation",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.57,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation",
+          "lead_generation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 52.28,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 5.8,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 8.64
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:21:59+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_021134e945",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_021134e945",
+        "platform": "medium",
+        "title": "I Built an AI Lead Generation System That Runs 24/7",
+        "body": "The system monitors Reddit, LinkedIn, and forums for buying-intent signals. When it finds a relevant question, it drafts a response for human review and updates our CRM automatically.",
+        "url": "https://medium.com/@saasfounder/ai-lead-generation-system-abc123def004",
+        "url_valid": true,
+        "score": 318,
+        "author": "James Okafor",
+        "tags": [
+          "lead-generation",
+          "ai",
+          "automation",
+          "sales"
+        ],
+        "published_at": "Sun, 07 Apr 2024 16:00:00 GMT",
+        "opportunity_signals": [
+          "tool_evaluation",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 0.966,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.35,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation",
+          "lead_generation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 66.48,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 20.0,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 8.64
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:00+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_d1a3cd9459",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_d1a3cd9459",
+        "platform": "medium",
+        "title": "The Real Problem With Zapier at Scale",
+        "body": "Zapier helped us start automating, but complex workflows became fragile and expensive. I compared Make.com, n8n, and Activepieces to understand which platform could remove the bottleneck without creating a maintenance burden.",
+        "url": "https://medium.com/@automationreview/problem-with-zapier-scale-abc123def002",
+        "url_valid": true,
+        "score": 142,
+        "author": "Marcus Webb",
+        "tags": [
+          "zapier",
+          "automation",
+          "workflow",
+          "tools"
+        ],
+        "published_at": "Fri, 12 Apr 2024 14:30:00 GMT",
+        "opportunity_signals": [
+          "problem_intent",
+          "workflow_pain",
+          "tool_evaluation",
+          "competitor_mention",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.29,
+        "knowledge_capability_matches": [
+          "automation",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 51.63,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 9.47,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:01+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_140356061e",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_140356061e",
+        "platform": "medium",
+        "title": "Five Workflow Bottlenecks Killing Marketing Productivity",
+        "body": "Manual reporting, approval loops, scattered content ideas, and reactive engagement are common bottlenecks. Each one wastes time and makes teams miss high-intent conversations that should have been answered quickly.",
+        "url": "https://medium.com/@productivity/five-workflow-bottlenecks-abc123def003",
+        "url_valid": true,
+        "score": 203,
+        "author": "Priya Nair",
+        "tags": [
+          "workflow",
+          "productivity",
+          "marketing",
+          "automation"
+        ],
+        "published_at": "Wed, 10 Apr 2024 11:00:00 GMT",
+        "opportunity_signals": [
+          "problem_intent",
+          "workflow_pain",
+          "tool_evaluation",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.42,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 56.41,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 13.53,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 5.04
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:02+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_4b1176a980",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_4b1176a980",
+        "platform": "medium",
+        "title": "Why AI Content Tools Still Feel Disappointing",
+        "body": "Most AI writing tools produce generic output because they do not understand workflow context, brand voice, or audience nuance. The useful tools are integrated into review workflows and keep humans in the loop.",
+        "url": "https://medium.com/@content/ai-content-tools-disappointing-abc123def005",
+        "url_valid": true,
+        "score": 176,
+        "author": "Leila Hashimi",
+        "tags": [
+          "ai",
+          "content-marketing",
+          "tools",
+          "workflow"
+        ],
+        "published_at": "Thu, 04 Apr 2024 10:00:00 GMT",
+        "opportunity_signals": [
+          "workflow_pain",
+          "tool_evaluation"
+        ],
+        "semantic_relevance_score": 0.475,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.14,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 53.89,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 11.73,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:03+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_49c1a6bfe0",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_49c1a6bfe0",
+        "platform": "medium",
+        "title": "A Step-by-Step Guide to Automating LinkedIn Outreach",
+        "body": "LinkedIn outreach becomes tedious at scale. This guide shows a workflow that enriches leads, drafts personalized openers, schedules follow-ups, and tracks replies without forcing the team to copy-paste between tools.",
+        "url": "https://medium.com/@outreach/linkedin-outreach-automation-abc123def006",
+        "url_valid": true,
+        "score": 94,
+        "author": "Tom Eriksson",
+        "tags": [
+          "automation",
+          "sales",
+          "ai",
+          "productivity"
+        ],
+        "published_at": "Mon, 01 Apr 2024 08:00:00 GMT",
+        "opportunity_signals": [
+          "workflow_pain",
+          "tool_evaluation",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.77,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation",
+          "saas_scaling",
+          "lead_generation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.91,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 6.27,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 10.8
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:04+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_dcb030440a",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_dcb030440a",
+        "platform": "medium",
+        "title": "HubSpot vs Salesforce for Growing Startups",
+        "body": "This comparison covers automation capabilities, workflow complexity, integration ecosystems, and the point where startups outgrow simple CRM tools. The biggest issue is often process design rather than features.",
+        "url": "https://medium.com/@crm/hubspot-vs-salesforce-startups-abc123def007",
+        "url_valid": true,
+        "score": 258,
+        "author": "David Kim",
+        "tags": [
+          "crm",
+          "sales",
+          "startups",
+          "automation"
+        ],
+        "published_at": "Tue, 26 Mar 2024 09:30:00 GMT",
+        "opportunity_signals": [
+          "problem_intent",
+          "workflow_pain",
+          "tool_evaluation",
+          "competitor_mention",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.28,
+        "knowledge_capability_matches": [
+          "automation",
+          "saas_scaling",
+          "lead_generation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 61.52,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 17.2,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:05+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_fc0e592e0c",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_fc0e592e0c",
+        "platform": "medium",
+        "title": "How to Build a No-Code AI Workflow From Scratch",
+        "body": "This tutorial walks through building an AI workflow using Make.com, Airtable, and Claude. It focuses on eliminating manual steps, handling approvals, and keeping the process maintainable for non-technical teams.",
+        "url": "https://medium.com/@nocode/no-code-ai-workflow-abc123def008",
+        "url_valid": true,
+        "score": 445,
+        "author": "Fatima Zahra",
+        "tags": [
+          "no-code",
+          "automation",
+          "ai",
+          "workflow",
+          "tutorial"
+        ],
+        "published_at": "Sat, 23 Mar 2024 10:00:00 GMT",
+        "opportunity_signals": [
+          "workflow_pain",
+          "tool_evaluation",
+          "competitor_mention",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.21,
+        "knowledge_capability_matches": [
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 60.36,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 20.0,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 2.52
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:06+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-medium_9fab5fc9a8",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "id": "medium_9fab5fc9a8",
+        "platform": "medium",
+        "title": "The Marketing Automation Stack That Grew Our SaaS",
+        "body": "Our stack handles lead capture, nurturing, qualification, content distribution, and reporting. The most valuable workflow alerts sales when a qualified lead visits pricing and provides a context brief automatically.",
+        "url": "https://medium.com/@saas/marketing-automation-stack-abc123def009",
+        "url_valid": true,
+        "score": 612,
+        "author": "Nina Petrov",
+        "tags": [
+          "saas",
+          "marketing",
+          "automation",
+          "lead-generation"
+        ],
+        "published_at": "Wed, 20 Mar 2024 12:00:00 GMT",
+        "opportunity_signals": [
+          "workflow_pain",
+          "automation_need"
+        ],
+        "semantic_relevance_score": 1.0,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.49,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation",
+          "saas_scaling",
+          "lead_generation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 66.48,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 20.0,
+          "signal_boost": 0.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 8.64
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:08+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_001-26",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_001",
+        "title": "How do I automate social media replies without sounding robotic?",
+        "body": "I need help building a workflow for Reddit, LinkedIn, and Twitter replies. Manual engagement takes too long and I want a tool that can draft helpful responses for review without sounding like spam.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock001/automate_social_media_replies/",
+        "score": 24,
+        "author": "growth_operator",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.967,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.57,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.28,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.6,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.84
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:30+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_002-26",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_002",
+        "title": "Best AI tool for content workflow and brand voice?",
+        "body": "I've tried a few AI writing tools but they feel generic. Looking for something that understands brand voice, drafts Reddit-safe replies, and fits into an approval workflow.",
+        "url": "https://www.reddit.com/r/artificial/comments/mock002/best_ai_tool_content/",
+        "score": 18,
+        "author": "brand_builder",
+        "subreddit": "artificial",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "recommendation_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.289,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.35,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:30+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_005-25",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_005",
+        "title": "Agency pain points managing Reddit engagement at scale",
+        "body": "We manage 12 client accounts and the bottleneck is finding relevant conversations, writing non-corporate responses, tracking which threads we already answered, and reporting ROI. This is becoming unsustainable.",
+        "url": "https://www.reddit.com/r/digitalmarketing/comments/mock005/agency_pain_points/",
+        "score": 41,
+        "author": "agency_ops",
+        "subreddit": "digitalmarketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.39,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.89,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.73,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:31+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_007-24",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_007",
+        "title": "What tool do you recommend for monitoring Reddit keywords?",
+        "body": "Looking for a reliable tool that can monitor specific subreddits, alert us when someone asks a question we can help with, and keep a history of our replies.",
+        "url": "https://www.reddit.com/r/marketing/comments/mock007/reddit_keyword_monitoring/",
+        "score": 15,
+        "author": "ops_marketer",
+        "subreddit": "marketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "recommendation_request"
+        ],
+        "semantic_relevance_score": 0.24,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.21,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 53.16,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.0,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:32+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_009-24",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_009",
+        "title": "AI moderation workflow cannot keep up",
+        "body": "Our community is getting 500 posts a day and manual moderation does not scale. Need advice on AI-powered moderation tools, automod rules, and triage workflows.",
+        "url": "https://www.reddit.com/r/community/comments/mock009/content_moderation_scale/",
+        "score": 33,
+        "author": "community_builder",
+        "subreddit": "community",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.359,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.28,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:33+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_011-27",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_011",
+        "title": "Frustrated with scheduling tools because none support Reddit well",
+        "body": "Every social media scheduling tool treats Reddit like another broadcast channel. I need keyword monitoring, context-aware draft replies, engagement history, and a workflow that respects subreddit culture.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock011/scheduling_tools_reddit/",
+        "score": 52,
+        "author": "reddit_marketer",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.252,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "churn_risk",
+        "confidence": 0.87,
+        "reasoning": "The user sounds frustrated with current tooling.",
+        "business_relevance": "High - possible switch opportunity.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 64.98,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 35.04,
+          "engagement_score": 3.47,
+          "signal_boost": 10.0,
+          "urgency_boost": 10.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:22:34+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_001-27",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_001",
+        "title": "How do I automate social media replies without sounding robotic?",
+        "body": "I need help building a workflow for Reddit, LinkedIn, and Twitter replies. Manual engagement takes too long and I want a tool that can draft helpful responses for review without sounding like spam.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock001/automate_social_media_replies/",
+        "score": 24,
+        "author": "growth_operator",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.967,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.57,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.28,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.6,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.84
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:23:03+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_002-27",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_002",
+        "title": "Best AI tool for content workflow and brand voice?",
+        "body": "I've tried a few AI writing tools but they feel generic. Looking for something that understands brand voice, drafts Reddit-safe replies, and fits into an approval workflow.",
+        "url": "https://www.reddit.com/r/artificial/comments/mock002/best_ai_tool_content/",
+        "score": 18,
+        "author": "brand_builder",
+        "subreddit": "artificial",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "recommendation_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.289,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.35,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:23:04+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_005-26",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_005",
+        "title": "Agency pain points managing Reddit engagement at scale",
+        "body": "We manage 12 client accounts and the bottleneck is finding relevant conversations, writing non-corporate responses, tracking which threads we already answered, and reporting ROI. This is becoming unsustainable.",
+        "url": "https://www.reddit.com/r/digitalmarketing/comments/mock005/agency_pain_points/",
+        "score": 41,
+        "author": "agency_ops",
+        "subreddit": "digitalmarketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.39,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.89,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.73,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:23:05+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_007-25",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_007",
+        "title": "What tool do you recommend for monitoring Reddit keywords?",
+        "body": "Looking for a reliable tool that can monitor specific subreddits, alert us when someone asks a question we can help with, and keep a history of our replies.",
+        "url": "https://www.reddit.com/r/marketing/comments/mock007/reddit_keyword_monitoring/",
+        "score": 15,
+        "author": "ops_marketer",
+        "subreddit": "marketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "recommendation_request"
+        ],
+        "semantic_relevance_score": 0.24,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.21,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 53.16,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.0,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:23:06+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_009-25",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_009",
+        "title": "AI moderation workflow cannot keep up",
+        "body": "Our community is getting 500 posts a day and manual moderation does not scale. Need advice on AI-powered moderation tools, automod rules, and triage workflows.",
+        "url": "https://www.reddit.com/r/community/comments/mock009/content_moderation_scale/",
+        "score": 33,
+        "author": "community_builder",
+        "subreddit": "community",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.359,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.28,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:23:07+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_011-28",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_011",
+        "title": "Frustrated with scheduling tools because none support Reddit well",
+        "body": "Every social media scheduling tool treats Reddit like another broadcast channel. I need keyword monitoring, context-aware draft replies, engagement history, and a workflow that respects subreddit culture.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock011/scheduling_tools_reddit/",
+        "score": 52,
+        "author": "reddit_marketer",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.252,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "churn_risk",
+        "confidence": 0.87,
+        "reasoning": "The user sounds frustrated with current tooling.",
+        "business_relevance": "High - possible switch opportunity.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 64.98,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 35.04,
+          "engagement_score": 3.47,
+          "signal_boost": 10.0,
+          "urgency_boost": 10.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:23:09+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_001-28",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_001",
+        "title": "How do I automate social media replies without sounding robotic?",
+        "body": "I need help building a workflow for Reddit, LinkedIn, and Twitter replies. Manual engagement takes too long and I want a tool that can draft helpful responses for review without sounding like spam.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock001/automate_social_media_replies/",
+        "score": 24,
+        "author": "growth_operator",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.967,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.57,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.28,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.6,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.84
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:26:55+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_002-28",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_002",
+        "title": "Best AI tool for content workflow and brand voice?",
+        "body": "I've tried a few AI writing tools but they feel generic. Looking for something that understands brand voice, drafts Reddit-safe replies, and fits into an approval workflow.",
+        "url": "https://www.reddit.com/r/artificial/comments/mock002/best_ai_tool_content/",
+        "score": 18,
+        "author": "brand_builder",
+        "subreddit": "artificial",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "recommendation_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.289,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.35,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:26:56+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_005-27",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_005",
+        "title": "Agency pain points managing Reddit engagement at scale",
+        "body": "We manage 12 client accounts and the bottleneck is finding relevant conversations, writing non-corporate responses, tracking which threads we already answered, and reporting ROI. This is becoming unsustainable.",
+        "url": "https://www.reddit.com/r/digitalmarketing/comments/mock005/agency_pain_points/",
+        "score": 41,
+        "author": "agency_ops",
+        "subreddit": "digitalmarketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.39,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 54.89,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.73,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:26:58+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_007-26",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_007",
+        "title": "What tool do you recommend for monitoring Reddit keywords?",
+        "body": "Looking for a reliable tool that can monitor specific subreddits, alert us when someone asks a question we can help with, and keep a history of our replies.",
+        "url": "https://www.reddit.com/r/marketing/comments/mock007/reddit_keyword_monitoring/",
+        "score": 15,
+        "author": "ops_marketer",
+        "subreddit": "marketing",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "recommendation_request"
+        ],
+        "semantic_relevance_score": 0.24,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.21,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 53.16,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 1.0,
+          "signal_boost": 10.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 4.32
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:26:59+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_009-26",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_009",
+        "title": "AI moderation workflow cannot keep up",
+        "body": "Our community is getting 500 posts a day and manual moderation does not scale. Need advice on AI-powered moderation tools, automod rules, and triage workflows.",
+        "url": "https://www.reddit.com/r/community/comments/mock009/content_moderation_scale/",
+        "score": 33,
+        "author": "community_builder",
+        "subreddit": "community",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "help_request",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.359,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.28,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "automation",
+          "saas_scaling"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "buying_intent",
+        "confidence": 0.91,
+        "reasoning": "The user appears to be evaluating workflow tools.",
+        "business_relevance": "High - direct solution discovery.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 55.52,
+        "priority_label": "cold",
+        "scoring_breakdown": {
+          "intent_score": 37.84,
+          "engagement_score": 2.2,
+          "signal_boost": 9.0,
+          "urgency_boost": 0.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "monitor"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:27:00+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
+    },
+    {
+      "review_id": "review-mock_011-29",
+      "review_status": "pending",
+      "status": "pending",
+      "reviewer_action": "",
+      "final_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+      "opportunity": {
+        "platform": "reddit",
+        "id": "mock_011",
+        "title": "Frustrated with scheduling tools because none support Reddit well",
+        "body": "Every social media scheduling tool treats Reddit like another broadcast channel. I need keyword monitoring, context-aware draft replies, engagement history, and a workflow that respects subreddit culture.",
+        "url": "https://www.reddit.com/r/socialmedia/comments/mock011/scheduling_tools_reddit/",
+        "score": 52,
+        "author": "reddit_marketer",
+        "subreddit": "socialmedia",
+        "created_utc": 0,
+        "num_comments": 0,
+        "opportunity_signals": [
+          "pain_point",
+          "bottleneck"
+        ],
+        "semantic_relevance_score": 0.252,
+        "semantic_relevance_reason": "semantic_match",
+        "knowledge_fit_score": 0.36,
+        "knowledge_capability_matches": [
+          "social_media_workflows",
+          "outreach",
+          "automation"
+        ],
+        "pipeline_state": "approved"
+      },
+      "draft": {
+        "draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time.",
+        "tone": "casual",
+        "cta": "If helpful, I can share a simple response workflow outline.",
+        "reasoning": "This keeps the reply helpful and specific without sounding salesy."
+      },
+      "compliance": {
+        "approved": true,
+        "risk_level": "safe",
+        "violations": [],
+        "safe_draft": "A practical way to handle this is to set a few clear rules for which conversations need a response first, then keep a lightweight playbook for recurring questions so the team is not starting from scratch every time. If helpful, I can share a simple response workflow outline.",
+        "recommendation": "Draft is clean and can move forward as-is."
+      },
+      "intent": {
+        "intent": "churn_risk",
+        "confidence": 0.87,
+        "reasoning": "The user sounds frustrated with current tooling.",
+        "business_relevance": "High - possible switch opportunity.",
+        "recommended_action": "respond"
+      },
+      "score": {
+        "priority_score": 64.98,
+        "priority_label": "warm",
+        "scoring_breakdown": {
+          "intent_score": 35.04,
+          "engagement_score": 3.47,
+          "signal_boost": 10.0,
+          "urgency_boost": 10.0,
+          "knowledge_fit_boost": 6.48
+        },
+        "recommended_action": "respond_soon"
+      },
+      "review_channel": "",
+      "reviewer": "",
+      "created_at": "2026-05-18T07:27:02+00:00",
+      "dequeued_at": "",
+      "reviewed_at": ""
     }
   ]
 }

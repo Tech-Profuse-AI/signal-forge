@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -102,12 +103,13 @@ class TaskScheduler:
         learning_factory: Callable[[], LearningAgent] = LearningAgent,
     ) -> None:
         root = Path(__file__).resolve().parents[1]
+        explicit_outputs_dir = outputs_dir is not None
         out_dir = Path(outputs_dir) if outputs_dir else root / "outputs"
         out_dir.mkdir(parents=True, exist_ok=True)
 
         if store is not None:
             self._store = store
-        else:
+        elif _should_use_supabase_store(explicit_outputs_dir=explicit_outputs_dir):
             # Phase 25: prefer Supabase-backed scheduled_tasks if configured.
             try:
                 from storage.supabase_store import (  # noqa: PLC0415
@@ -128,6 +130,8 @@ class TaskScheduler:
                     self._store = JsonFileTaskStore(out_dir / "scheduled_tasks.json")
             except Exception:
                 self._store = JsonFileTaskStore(out_dir / "scheduled_tasks.json")
+        else:
+            self._store = JsonFileTaskStore(out_dir / "scheduled_tasks.json")
         self._failures = failures or JsonFailureLog(out_dir / "scheduled_task_failures.json")
         self._analytics_factory = analytics_factory
         self._learning_factory = learning_factory
@@ -407,6 +411,15 @@ def _clean_text(text: str) -> str:
     return " ".join(str(text).split()).strip()
 
 
+def _should_use_supabase_store(*, explicit_outputs_dir: bool) -> bool:
+    backend = os.environ.get("SIGNALFORGE_SCHEDULER_BACKEND", "").strip().lower()
+    if backend in {"supabase", "remote"}:
+        return True
+    if backend in {"json", "local", "file"}:
+        return False
+    return not explicit_outputs_dir
+
+
 __all__ = [
     "TaskScheduler",
     "TaskStore",
@@ -414,4 +427,3 @@ __all__ = [
     "SUPPORTED_FREQUENCIES",
     "MAX_RETRIES",
 ]
-

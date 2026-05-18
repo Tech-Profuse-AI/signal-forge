@@ -7,12 +7,14 @@ from typing import Any, Dict, List
 
 import streamlit as st
 
+from schemas.opportunity import serialize_opportunity
+
 
 def render_opportunities_table(items: List[Dict[str, Any]]) -> None:
     """
     Render pipeline results as a sortable table.
 
-    Each item should be a FinalResult-shaped dict.
+    Each item should be a canonical flat Opportunity-shaped dict.
     """
     if not items:
         st.info("No opportunities to display.")
@@ -22,21 +24,18 @@ def render_opportunities_table(items: List[Dict[str, Any]]) -> None:
 
     rows = []
     for item in items:
-        opp = item.get("opportunity", {})
-        intent = item.get("intent", {})
-        score = item.get("score", {})
-        compliance = item.get("compliance", {})
+        opp = serialize_opportunity(item)
 
         rows.append({
-            "ID": opp.get("id", "--"),
+            "ID": opp.get("opportunity_id") or opp.get("id", "--"),
             "Title": (opp.get("title", "") or "")[:60],
-            "Source/Community": opp.get("subreddit", "") or opp.get("topic", ""),
-            "Intent": intent.get("intent", "--"),
-            "Confidence (Intent)": round(intent.get("confidence", 0), 2),
-            "Priority Score": score.get("priority_score", 0),
-            "Priority": score.get("priority_label", "--"),
-            "Auto-approved (compliance)": "Yes" if compliance.get("approved") else "No",
-            "Risk": compliance.get("risk_level", "--"),
+            "Source/Community": opp.get("source", ""),
+            "Intent": opp.get("intent", "--"),
+            "Confidence (Intent)": round(opp.get("confidence", 0) / 100, 2),
+            "Priority Score": opp.get("score", 0),
+            "Priority": opp.get("priority_label", "--"),
+            "Auto-approved (compliance)": "Yes" if opp.get("compliance_approved") else "No",
+            "Risk": opp.get("risk_level", "--"),
         })
 
     df = pd.DataFrame(rows)

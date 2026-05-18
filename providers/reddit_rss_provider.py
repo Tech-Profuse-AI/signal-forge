@@ -23,7 +23,6 @@ from utils.url_validator import (
     is_valid_reddit_entry_id,
     normalize_reddit_url,
     reconstruct_reddit_url,
-    validate_and_clean,
 )
 
 logger = logging.getLogger("signalforge.reddit_rss")
@@ -33,7 +32,11 @@ _MOCK_DATA_PATH = (
 )
 
 _REDDIT_RSS_URL = (
-    "https://www.reddit.com/search.rss?q={query}&sort=relevance&t=week&limit={limit}"
+    "https://www.reddit.com/search.rss?q={query}&sort=relevance&t={time_filter}&limit={limit}"
+)
+_REDDIT_SUBREDDIT_RSS_URL = (
+    "https://www.reddit.com/r/{subreddit}/search.rss"
+    "?q={query}&restrict_sr=on&sort=relevance&t={time_filter}&limit={limit}"
 )
 
 
@@ -75,6 +78,8 @@ class RedditRSSProvider:
         self,
         query: str,
         limit: int = 25,
+        subreddit: Optional[str] = None,
+        time_filter: str = "week",
     ) -> List[Dict[str, Any]]:
         """
         Fetch Reddit posts for a search query.
@@ -88,7 +93,7 @@ class RedditRSSProvider:
         """
         if self._mode == "mock":
             return self._fetch_mock(query, limit)
-        return self._fetch_live(query, limit)
+        return self._fetch_live(query, limit, subreddit=subreddit, time_filter=time_filter)
 
     def normalize(self, post: Dict[str, Any]) -> Dict[str, Any]:
         raw_id = post.get("id") or post.get("link") or post.get("url") or ""
@@ -133,13 +138,29 @@ class RedditRSSProvider:
             "subreddit": self._extract_subreddit(post, cleaned_url),
         }
 
-    def _fetch_live(self, query: str, limit: int) -> List[Dict[str, Any]]:
+    def _fetch_live(
+        self,
+        query: str,
+        limit: int,
+        *,
+        subreddit: Optional[str] = None,
+        time_filter: str = "week",
+    ) -> List[Dict[str, Any]]:
         import feedparser
 
-        feed_url = _REDDIT_RSS_URL.format(
-            query=quote_plus(query),
-            limit=limit,
-        )
+        if subreddit:
+            feed_url = _REDDIT_SUBREDDIT_RSS_URL.format(
+                subreddit=quote_plus(subreddit),
+                query=quote_plus(query),
+                time_filter=quote_plus(time_filter or "week"),
+                limit=limit,
+            )
+        else:
+            feed_url = _REDDIT_RSS_URL.format(
+                query=quote_plus(query),
+                time_filter=quote_plus(time_filter or "week"),
+                limit=limit,
+            )
         logger.info("Fetching Reddit RSS - url=%s limit=%d", feed_url, limit)
 
         try:

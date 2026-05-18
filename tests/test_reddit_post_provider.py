@@ -43,7 +43,7 @@ def test_reddit_post_provider_stages_manual_reply(capsys):
 
         assert result == {
             "status": "manual_required",
-            "url": "https://www.reddit.com/r/python/comments/abc123/example_post/",
+            "url": "https://www.reddit.com/r/python/comments/abc123/example_post",
             "draft": "This is the approved reply draft.",
         }
 
@@ -63,7 +63,8 @@ def test_reddit_post_provider_stages_manual_reply(capsys):
         assert record["review_status"] == "approved_for_posting"
         assert record["status"] == "approved_for_posting"
         assert record["review_id"] == "review-reddit-post-abc123"
-        assert record["opportunity"]["thread_url"] == result["url"]
+        assert record["url"] == result["url"]
+        assert record["url_valid"] is True
         assert record["final_draft"] == result["draft"]
 
         printed = capsys.readouterr().out

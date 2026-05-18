@@ -1,4 +1,4 @@
-import { Moon, Play, Search, Sun } from 'lucide-react';
+import { Moon, Sun, Zap } from 'lucide-react';
 
 export function TopHeader({
   isLight,
@@ -6,16 +6,16 @@ export function TopHeader({
   onOpenScan,
   searchTerm,
   onSearchChange,
-  scanRunning,
+  sourceRunning,
 }) {
   return (
     <header className="top-header">
       <label className="search-shell">
-        <Search size={17} className="text-[var(--text-faint)]" />
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-faint)] shrink-0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search current results"
+          placeholder="Search opportunities…"
           className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)]"
         />
       </label>
@@ -32,11 +32,21 @@ export function TopHeader({
         <button
           type="button"
           onClick={onOpenScan}
-          disabled={scanRunning}
-          className="button-primary"
+          disabled={sourceRunning}
+          className="button-primary run-scan-btn"
+          id="run-scan-button"
         >
-          <Play size={16} />
-          {scanRunning ? 'Scanning' : 'Run Scan'}
+          {sourceRunning ? (
+            <>
+              <span className="live-dot" />
+              Scanning…
+            </>
+          ) : (
+            <>
+              <Zap size={15} />
+              Run Scan
+            </>
+          )}
         </button>
       </div>
     </header>

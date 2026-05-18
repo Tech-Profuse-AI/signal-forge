@@ -58,9 +58,13 @@ Rules:
 6. Keep the draft short-to-medium length and actionable.
 7. Product awareness should inform the advice, but the reply should still
    feel useful even without a product mention.
-8. Choose exactly one tone from: helpful, expert, casual, professional.
-9. CTA must be optional and low-pressure. Use an empty string if none is needed.
-10. Output ONLY valid JSON. No markdown fences and no extra commentary.
+8. Use retrieved company context when it directly fits the user's problem:
+   positioning, capabilities, customer pains, use cases, differentiators, and
+   pricing details if pricing was actually retrieved.
+9. Do not invent pricing, features, customers, or integrations.
+10. Choose exactly one tone from: helpful, expert, casual, professional.
+11. CTA must be optional and low-pressure. Use an empty string if none is needed.
+12. Output ONLY valid JSON. No markdown fences and no extra commentary.
 
 Strict output schema:
 {
@@ -164,6 +168,8 @@ class DraftingAgent:
 
         preferred_tone = self._preferred_tone(opportunity, intent_data, score_data)
         relevant_context = knowledge_context.get("relevant_context", [])[:3]
+        structured_context = knowledge_context.get("structured_context", {})
+        knowledge_fit = knowledge_context.get("knowledge_fit", {})
         context_lines = []
         for item in relevant_context:
             source = str(item.get("source", "unknown"))
@@ -174,6 +180,15 @@ class DraftingAgent:
         if not context_lines:
             context_lines.append("- No retrieved chunks were available.")
 
+        structured_lines = self._structured_context_lines(structured_context)
+        fit_score = 0
+        capability_matches: List[str] = []
+        if isinstance(knowledge_fit, dict):
+            fit_score = knowledge_fit.get("score", 0)
+            raw_matches = knowledge_fit.get("capability_matches", [])
+            if isinstance(raw_matches, list):
+                capability_matches = [str(item) for item in raw_matches if item]
+
         sources = knowledge_context.get("sources", [])
         source_line = ", ".join(str(source) for source in sources) if sources else "none"
 
@@ -181,10 +196,10 @@ class DraftingAgent:
             f"{_SYSTEM_PROMPT}\n\n"
             f"Opportunity:\n"
             f"- ID: {opportunity.get('id', 'unknown')}\n"
-            f"- Subreddit: r/{opportunity.get('subreddit', '')}\n"
+            f"- Source: {opportunity.get('source') or opportunity.get('subreddit') or opportunity.get('topic') or opportunity.get('author') or ''}\n"
             f"- Title: {self._clean_text(str(opportunity.get('title', '')))}\n"
             f"- Body: {self._clean_text(str(opportunity.get('body', '')))}\n"
-            f"- Signals: {', '.join(opportunity.get('opportunity_signals', []) or ['none'])}\n\n"
+            f"- Signals: {', '.join(opportunity.get('opportunity_signals') or opportunity.get('signals') or ['none'])}\n\n"
             f"Intent classification:\n"
             f"- Intent: {intent_data.get('intent', '')}\n"
             f"- Confidence: {intent_data.get('confidence', 0.0)}\n"
@@ -197,11 +212,43 @@ class DraftingAgent:
             f"Retrieved product knowledge summary:\n"
             f"- Summary: {self._clean_text(str(knowledge_context.get('summary', '')))}\n"
             f"- Sources: {source_line}\n"
+            f"- Capability fit: {fit_score} ({', '.join(capability_matches) or 'none'})\n"
+            f"- Structured company context:\n"
+            f"{chr(10).join(structured_lines)}\n"
             f"- Relevant chunks:\n"
             f"{chr(10).join(context_lines)}\n\n"
             f"Preferred tone: {preferred_tone}\n\n"
             f"Write the JSON response now."
         )
+
+    @staticmethod
+    def _structured_context_lines(structured_context: Any) -> List[str]:
+        labels = [
+            ("product_positioning", "Product positioning"),
+            ("pricing", "Pricing"),
+            ("capabilities", "Capabilities"),
+            ("customer_pain_points", "Customer pain points"),
+            ("use_cases", "Use cases"),
+            ("differentiators", "Differentiators"),
+        ]
+        if not isinstance(structured_context, dict):
+            return ["- No structured company context was retrieved."]
+
+        lines: List[str] = []
+        for key, label in labels:
+            values = structured_context.get(key, [])
+            if values:
+                joined = " | ".join(
+                    DraftingAgent._clean_text(str(value))
+                    for value in values[:2]
+                    if str(value).strip()
+                )
+                if joined:
+                    lines.append(f"  - {label}: {joined}")
+            elif key == "pricing":
+                lines.append("  - Pricing: No retrieved pricing details.")
+
+        return lines or ["- No structured company context was retrieved."]
 
     def _parse_response(self, raw_response: str) -> Dict[str, str]:
         raw_response = re.sub(r"^\s*```(?:json)?\s*", "", raw_response)
@@ -256,7 +303,7 @@ class DraftingAgent:
     ) -> str:
         intent = str(intent_data.get("intent", "")).lower()
         label = str(score_data.get("priority_label", "")).lower()
-        subreddit = str(opportunity.get("subreddit", "")).lower()
+        subreddit = str(opportunity.get("subreddit") or opportunity.get("source", "")).lower()
 
         if intent == "hiring_intent":
             return "professional"
@@ -325,4 +372,3 @@ class DraftingAgent:
 
     def __repr__(self) -> str:
         return f"<DraftingAgent llm={self._llm} drafted={sum(self._stats.values())}>"
-

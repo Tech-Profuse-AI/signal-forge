@@ -14,6 +14,8 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, TypedDict
 from uuid import uuid4
 
+from schemas.opportunity import serialize_opportunity
+
 try:
     from slack_sdk import WebClient
 except ImportError:  # pragma: no cover - covered via injected fake client
@@ -120,8 +122,7 @@ class SlackClient:
                 "Review item must include dict values for opportunity, draft, and compliance."
             )
 
-        opportunity = item.get("opportunity", {})
-        draft = item.get("draft", {})
+        opportunity = serialize_opportunity(item)
         intent = self._intent_label(item)
         priority = self._priority_line(item)
         draft_text = self._review_draft_text(item)
@@ -160,6 +161,107 @@ class SlackClient:
             "blocks": blocks,
         }
 
+    def send_review(self, item: Dict[str, Any]) -> ReviewDispatchResult:
+        """Backward-compatible alias for sending a review card."""
+        return self.send_notification(item)
+
+    def build_review_payload(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """Build a Slack review payload for a canonical opportunity item."""
+        if not self._is_valid_item(item):
+            raise ValueError(
+                "Review item must include a valid opportunity, URL, and draft."
+            )
+
+        opportunity = serialize_opportunity(item)
+        intent = self._intent_label(item)
+        priority = self._priority_line(item)
+        draft_text = self._review_draft_text(item)
+        compliance = self._compliance_line(item)
+        review_id = self._resolve_review_id(item)
+
+        platform = self._clean_text(str(opportunity.get("platform", ""))).upper() or "UNKNOWN"
+        title = self._clean_text(str(opportunity.get("title", ""))) or "Untitled opportunity"
+        title_display = self._truncate(title, 80)
+        url = self._clean_text(str(opportunity.get("url", "")))
+        draft_preview = self._truncate(draft_text, 700)
+        summary = self._opportunity_summary(opportunity)
+        message_text = f"New opportunity on {platform}: {title_display}"
+
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*Opportunity summary*\n"
+                        f"*Platform:* {platform}\n"
+                        f"*Title:* {title_display}\n"
+                        f"*URL:* {url or 'unavailable'}\n"
+                        f"{summary}"
+                    ),
+                },
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*Intent*\n{intent}"},
+                    {"type": "mrkdwn", "text": f"*Priority score*\n{priority}"},
+                    {"type": "mrkdwn", "text": f"*Compliance status*\n{compliance}"},
+                ],
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*Draft*\n{draft_preview}"},
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Approve"},
+                        "style": "primary",
+                        "action_id": "approve",
+                        "value": review_id,
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Reject"},
+                        "style": "danger",
+                        "action_id": "reject",
+                        "value": review_id,
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Edit"},
+                        "action_id": "edit",
+                        "value": review_id,
+                    },
+                ],
+            },
+        ]
+
+        return {
+            "review_id": review_id,
+            "text": message_text,
+            "blocks": blocks,
+        }
+
+    def handle_webhook_action(
+        self,
+        payload: Dict[str, Any],
+        review_queue: "ReviewQueue",
+    ) -> ReviewDispatchResult:
+        """Persist a simplified Slack action payload into the review queue."""
+        if not isinstance(payload, dict):
+            raise TypeError(f"payload must be a dict, got {type(payload).__name__}")
+        return review_queue.handle_action({
+            "review_id": payload.get("review_id", ""),
+            "action": payload.get("action") or payload.get("reviewer_action", ""),
+            "final_draft": payload.get("final_draft", ""),
+            "edited_draft": payload.get("edited_draft", ""),
+            "reviewer": self._reviewer_name(payload),
+        })
+
 
     def _resolve_channel(self, item: Dict[str, Any]) -> str:
         channel = self._clean_text(
@@ -183,7 +285,17 @@ class SlackClient:
             return review_id
 
         opportunity = item.get("opportunity", {})
-        opportunity_id = SlackClient._clean_text(str(opportunity.get("id", "")))
+        opportunity_id = SlackClient._clean_text(
+            str(
+                item.get("opportunity_id")
+                or item.get("id")
+                or (
+                    opportunity.get("id", "")
+                    if isinstance(opportunity, dict)
+                    else ""
+                )
+            )
+        )
         if opportunity_id:
             return f"review-{opportunity_id}"
         return f"review-{uuid4().hex[:12]}"
@@ -192,6 +304,13 @@ class SlackClient:
     def _intent_label(item: Dict[str, Any]) -> str:
         intent_block = item.get("intent")
         opportunity = item.get("opportunity", {})
+
+        flat_intent = SlackClient._clean_text(str(item.get("intent", "")))
+        if flat_intent and not isinstance(intent_block, dict):
+            confidence = item.get("confidence", "")
+            if confidence != "":
+                return f"{flat_intent} (confidence: {confidence})"
+            return flat_intent
 
         if isinstance(intent_block, dict):
             intent = SlackClient._clean_text(str(intent_block.get("intent", "")))
@@ -207,6 +326,12 @@ class SlackClient:
     def _priority_line(item: Dict[str, Any]) -> str:
         score_block = item.get("score")
         opportunity = item.get("opportunity", {})
+
+        if not isinstance(score_block, dict) and score_block not in (None, ""):
+            label = SlackClient._clean_text(str(item.get("priority_label", "")))
+            if label:
+                return f"{score_block} ({label})"
+            return str(score_block)
 
         if isinstance(score_block, dict):
             score = score_block.get("priority_score", "")
@@ -230,6 +355,15 @@ class SlackClient:
 
     @staticmethod
     def _review_draft_text(item: Dict[str, Any]) -> str:
+        final_draft = SlackClient._clean_text(str(item.get("final_draft", "")))
+        if final_draft:
+            return final_draft
+
+        if isinstance(item.get("draft"), str):
+            draft_text = SlackClient._clean_text(str(item.get("draft", "")))
+            if draft_text:
+                return draft_text
+
         compliance = item.get("compliance", {})
         draft = item.get("draft", {})
 
@@ -250,6 +384,15 @@ class SlackClient:
 
     @staticmethod
     def _compliance_line(item: Dict[str, Any]) -> str:
+        if "compliance_approved" in item:
+            risk = SlackClient._clean_text(str(item.get("risk_level", "unknown")))
+            approved = bool(item.get("compliance_approved", False))
+            violations = item.get("violations", [])
+            if not isinstance(violations, list):
+                violations = []
+            violation_text = ", ".join(str(v) for v in violations) if violations else "none"
+            return f"{risk} | approved={approved} | violations={violation_text}"
+
         compliance = item.get("compliance", {})
         if not isinstance(compliance, dict):
             return "unknown"
@@ -308,11 +451,12 @@ class SlackClient:
         if not isinstance(item, dict):
             return False
 
-        for key in ("opportunity", "draft", "compliance"):
-            if key not in item or not isinstance(item[key], dict):
-                return False
-
-        return bool(SlackClient._review_draft_text(item))
+        normalized = serialize_opportunity(item)
+        return bool(
+            normalized.get("title")
+            and normalized.get("url")
+            and SlackClient._review_draft_text(item)
+        )
 
     def __repr__(self) -> str:
         return (

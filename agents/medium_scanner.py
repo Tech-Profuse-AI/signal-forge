@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from agents.opportunity_scanner.cache_manager import CacheManager
 from agents.opportunity_scanner.filters import FilterConfig, OpportunityFilter
 from providers.medium_provider import MediumProvider
+from schemas.opportunity import serialize_opportunity
 from utils.dedup import cache_keys_for_posts, dedupe_exact_posts
-from utils.query_normalizer import normalize_queries, normalize_query
+from utils.query_normalizer import is_generic_standalone_query, platform_queries
+from utils.semantic_relevance import filter_by_semantic_relevance
 
 logger = logging.getLogger("signalforge.medium_scanner")
 
@@ -61,34 +64,48 @@ _SIGNAL_PATTERNS: Dict[str, List[str]] = {
     ],
 }
 
-_MEDIUM_FALLBACK_TAGS = ["ai", "automation", "productivity", "startups"]
+_MEDIUM_FALLBACK_TAGS = [
+    "workflow-automation",
+    "marketing-automation",
+    "lead-generation",
+    "business-process-automation",
+]
 
 _MEDIUM_TAG_KEYWORDS: Dict[str, List[str]] = {
-    "ai": ["ai", "artificial", "gpt", "llm", "agent", "agents"],
-    "automation": [
-        "automation", "automate", "automating", "workflow",
-        "schedule", "scheduling",
+    "ai-automation": [
+        "ai", "artificial", "gpt", "llm", "agent", "agents",
+        "automation", "automate", "automating",
     ],
-    "workflow": ["workflow", "workflows", "process", "pipeline"],
-    "ai-tools": ["tool", "tools", "software", "platform"],
-    "productivity": [
+    "workflow-automation": [
+        "workflow", "workflows", "automation", "automate",
+        "automating", "process", "pipeline",
+    ],
+    "business-process-automation": [
+        "business", "process", "operations", "ops", "manual",
+        "repetitive", "workflow",
+    ],
+    "productivity-systems": [
         "productivity", "efficient", "efficiency", "save", "time",
-        "schedule", "scheduling",
+        "schedule", "scheduling", "system", "systems",
     ],
-    "social-media": [
+    "social-media-marketing": [
         "social", "media", "reddit", "instagram", "linkedin", "twitter",
     ],
-    "marketing": ["marketing", "content", "lead", "campaign", "brand"],
+    "community-management": [
+        "community", "reddit", "engagement", "reply", "responses",
+    ],
+    "marketing-automation": ["marketing", "content", "campaign", "brand", "automation"],
     "content-marketing": ["content", "writing", "copywriting", "blog"],
-    "startups": ["startup", "startups", "founder", "saas"],
-    "sales": ["sales", "crm", "lead"],
+    "saas-growth": ["startup", "startups", "founder", "saas", "scale", "scaling"],
+    "sales-automation": ["sales", "crm", "outreach", "pipeline"],
+    "lead-generation": ["lead", "leads", "prospect", "prospects", "outreach"],
+    "case-study": ["case", "study", "lessons", "learned", "architecture"],
 }
 
 
 def extract_medium_tags(query: str) -> List[str]:
     """Generate 2-5 Medium RSS tags from a natural-language query."""
-    normalised = normalize_query(query)
-    text = f"{query} {normalised}".lower()
+    text = str(query or "").lower()
     tokens = set(re.findall(r"[a-z0-9]+", text))
 
     tags: List[str] = []
@@ -96,16 +113,16 @@ def extract_medium_tags(query: str) -> List[str]:
         if any(keyword in tokens or keyword in text for keyword in keywords):
             tags.append(tag)
 
-    if "social-media" in tags and "marketing" not in tags:
-        tags.append("marketing")
-    if "automation" in tags and "workflow" not in tags and "social-media" not in tags:
-        tags.append("workflow")
-    if "automation" in tags and "productivity" not in tags:
-        tags.append("productivity")
-    if "ai" in tags and "ai-tools" not in tags and ({"tool", "tools"} & tokens):
-        tags.append("ai-tools")
-    if "tools" in tokens and "ai-tools" not in tags:
-        tags.append("ai-tools")
+    if {"ai", "automation"} <= tokens and "ai-automation" not in tags:
+        tags.insert(0, "ai-automation")
+    if {"workflow", "automation"} & tokens and "workflow-automation" not in tags:
+        tags.insert(0, "workflow-automation")
+    if "social-media-marketing" in tags and "marketing-automation" not in tags:
+        tags.append("marketing-automation")
+    if "lead-generation" in tags and "sales-automation" not in tags:
+        tags.append("sales-automation")
+    if ("case" in tokens or "study" in tokens) and "case-study" not in tags:
+        tags.append("case-study")
 
     if len(tags) < 2:
         for fallback in _MEDIUM_FALLBACK_TAGS:
@@ -149,11 +166,10 @@ class MediumScannerAgent:
             config=filter_config or self._medium_filter_config()
         )
         self._default_keywords = default_keywords or [
-            "ai automation",
-            "workflow optimization",
-            "marketing automation",
-            "content generation",
-            "lead generation",
+            "AI workflow automation case studies",
+            "business process automation lessons learned",
+            "marketing automation operational workflows",
+            "lead generation automation architecture",
         ]
         self.stats = {"fetched": 0, "deduped": 0, "filtered": 0, "approved": 0}
 
@@ -179,10 +195,11 @@ class MediumScannerAgent:
         self,
         keywords: Optional[List[str]] = None,
         limit_per_keyword: int = 10,
+        original_intent: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Run fetch, exact dedup, balanced filtering, and signal extraction."""
         raw_kw = keywords or self._default_keywords
-        normalised_queries = normalize_queries(raw_kw) or self._default_keywords
+        normalised_queries = self._prepare_queries(raw_kw, original_intent=original_intent)
         tags: List[str] = []
         for query in normalised_queries:
             for tag in extract_medium_tags(query):
@@ -217,6 +234,24 @@ class MediumScannerAgent:
         )
 
         filtered = self._filter.filter_opportunities(deduped)
+        if isinstance(raw_kw, str):
+            raw_intent_text = raw_kw
+        else:
+            raw_intent_text = " ".join(str(item) for item in raw_kw)
+        relevance_intent = original_intent or raw_intent_text
+        if relevance_intent.strip():
+            before_relevance = len(filtered)
+            filtered = filter_by_semantic_relevance(
+                filtered,
+                relevance_intent,
+                threshold=0.2,
+            )
+            logger.info(
+                "Medium semantic relevance stage: input=%d kept=%d rejected=%d",
+                before_relevance,
+                len(filtered),
+                before_relevance - len(filtered),
+            )
         self.stats["filtered"] += len(filtered)
         logger.info(
             "Medium filter stage: input=%d kept=%d rejected=%d",
@@ -247,7 +282,41 @@ class MediumScannerAgent:
         self._cache.mark_seen_batch(cache_keys_for_posts(opportunities))
         self.stats["approved"] += len(opportunities)
         logger.info("Final Medium opportunities: %d", len(opportunities))
-        return opportunities
+        return [
+            serialize_opportunity(
+                opportunity,
+                status="discovered",
+                pipeline_state="discovered",
+                can_mutate=False,
+            )
+            for opportunity in opportunities
+        ]
+
+    def _prepare_queries(
+        self,
+        raw_keywords: List[str] | str,
+        *,
+        original_intent: Optional[str],
+    ) -> List[str]:
+        if isinstance(raw_keywords, str):
+            raw_list = [raw_keywords]
+        else:
+            raw_list = [str(item) for item in raw_keywords if str(item).strip()]
+
+        if original_intent:
+            candidates = raw_list
+        else:
+            candidates = platform_queries(raw_list, platform="medium", max_queries=4)
+
+        out: List[str] = []
+        for query in candidates:
+            clean = str(query).strip()
+            if not clean or is_generic_standalone_query(clean):
+                continue
+            if clean not in out:
+                out.append(clean)
+
+        return out or list(self._default_keywords)
 
     def generate_report(self, opportunities: List[Dict[str, Any]]) -> str:
         """Build a human-readable summary of discovered Medium opportunities."""
@@ -277,18 +346,24 @@ class MediumScannerAgent:
     def _fetch_all(self, keywords: List[str], limit: int) -> List[Dict[str, Any]]:
         all_posts: List[Dict[str, Any]] = []
 
-        for tag in keywords:
-            try:
-                posts = self._provider.fetch_posts(query=tag, limit=limit)
-                all_posts.extend(posts)
-                logger.info("Fetched %d Medium articles for tag '%s'", len(posts), tag)
-                if not posts:
-                    logger.info(
-                        "Medium tag returned 0 articles: tag=%s reason=empty_rss",
-                        tag,
-                    )
-            except Exception as exc:
-                logger.error("Fetch failed for Medium tag '%s': %s", tag, exc)
+        def fetch_tag(tag: str) -> List[Dict[str, Any]]:
+            return self._provider.fetch_posts(query=tag, limit=limit)
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = {pool.submit(fetch_tag, tag): tag for tag in keywords}
+            for future in as_completed(futures):
+                tag = futures[future]
+                try:
+                    posts = future.result()
+                    all_posts.extend(posts)
+                    logger.info("Fetched %d Medium articles for tag '%s'", len(posts), tag)
+                    if not posts:
+                        logger.info(
+                            "Medium tag returned 0 articles: tag=%s reason=empty_rss",
+                            tag,
+                        )
+                except Exception as exc:
+                    logger.error("Fetch failed for Medium tag '%s': %s", tag, exc)
 
         return all_posts
 

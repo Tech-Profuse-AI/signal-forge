@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from utils.url_validator import validate_and_clean
+from utils.url_validator import normalize_url
 
 logger = logging.getLogger("signalforge.medium")
 
@@ -137,7 +137,7 @@ class MediumProvider:
         score = self._derive_score(post, body, published_at)
 
         # --- URL cleaning & validation ---
-        cleaned_url, is_valid = validate_and_clean(raw_url, "medium")
+        cleaned_url, is_valid = normalize_url(raw_url, "medium")
 
         if not is_valid:
             logger.debug(
@@ -215,7 +215,10 @@ class MediumProvider:
             ]
             posts = matched if matched else posts
 
-        normalised = [self.normalize(p) for p in posts[:limit]]
+        normalised = [
+            post for post in (self.normalize(p) for p in posts[:limit])
+            if post.get("url_valid", True)
+        ]
         logger.info(
             "Mock fetch: query='%s' -> %d posts", query, len(normalised)
         )

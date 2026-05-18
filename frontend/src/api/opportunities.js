@@ -1,26 +1,10 @@
-import { api } from './http';
+import { api, API_BASE_URL } from './http';
 import {
   normalizeMetrics,
   normalizeOpportunity,
   normalizeOpportunityList,
   normalizePipelineStatus,
 } from './normalizers';
-
-const LEGACY_STATUS_FALLBACKS = {
-  approved: 'posted',
-  published: 'posted',
-  rejected: 'skipped',
-};
-
-function shouldFallbackDraftEndpoint(error) {
-  const status = error?.response?.status;
-  return status === 404 || status === 405;
-}
-
-function shouldFallbackStatus(error) {
-  const status = error?.response?.status;
-  return status === 400 || status === 404 || status === 405 || status === 422;
-}
 
 function encodeId(id) {
   return encodeURIComponent(id);
@@ -51,33 +35,40 @@ export async function runScan(query) {
   return data;
 }
 
-export async function patchDraft({ id, draft }) {
-  try {
-    const { data } = await api.patch(`/drafts/${encodeId(id)}`, { draft });
-    return normalizeOpportunity(data);
-  } catch (error) {
-    if (!shouldFallbackDraftEndpoint(error)) {
-      throw error;
-    }
-
-    const { data } = await api.patch(`/items/${encodeId(id)}/draft`, { draft });
-    return normalizeOpportunity(data);
+export function subscribePipelineEvents({ onEvent, onError } = {}) {
+  if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
+    return () => {};
   }
+
+  const source = new window.EventSource(`${API_BASE_URL}/pipeline/events`);
+  const handleEvent = (message) => {
+    if (!message.data) return;
+    try {
+      onEvent?.(JSON.parse(message.data));
+    } catch (error) {
+      onError?.(error);
+    }
+  };
+
+  source.onmessage = handleEvent;
+  source.addEventListener('pipeline_status', handleEvent);
+  source.addEventListener('platform_batch', handleEvent);
+  source.addEventListener('opportunity_state', handleEvent);
+  source.addEventListener('pipeline_complete', handleEvent);
+  source.addEventListener('pipeline_error', handleEvent);
+  source.onerror = (error) => {
+    onError?.(error);
+  };
+
+  return () => source.close();
+}
+
+export async function patchDraft({ id, draft }) {
+  const { data } = await api.patch(`/items/${encodeId(id)}/draft`, { draft });
+  return normalizeOpportunity(data);
 }
 
 export async function patchOpportunityStatus({ id, status }) {
-  try {
-    const { data } = await api.patch(`/items/${encodeId(id)}/status`, { status });
-    return normalizeOpportunity({ ...data, status: data?.status || status });
-  } catch (error) {
-    const fallbackStatus = LEGACY_STATUS_FALLBACKS[status];
-    if (!fallbackStatus || !shouldFallbackStatus(error)) {
-      throw error;
-    }
-
-    const { data } = await api.patch(`/items/${encodeId(id)}/status`, {
-      status: fallbackStatus,
-    });
-    return normalizeOpportunity({ ...data, status: data?.status || fallbackStatus });
-  }
+  const { data } = await api.patch(`/items/${encodeId(id)}/status`, { status });
+  return normalizeOpportunity({ ...data, status: data?.status || status });
 }

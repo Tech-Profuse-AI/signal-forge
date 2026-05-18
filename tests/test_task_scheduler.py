@@ -97,6 +97,7 @@ def test_scheduler_uses_supabase_task_store_when_configured(tmp_path: Path, monk
     # Configure Supabase settings env and mock ping + table operations.
     monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
     monkeypatch.setenv("SUPABASE_KEY", "k")
+    monkeypatch.setenv("SIGNALFORGE_SCHEDULER_BACKEND", "supabase")
 
     class _FakeTable:
         def __init__(self):
@@ -217,4 +218,3 @@ def test_retry_behavior_marks_failed_after_max_retries(tmp_path: Path):
     assert failures.is_file()
     fdata = json.loads(failures.read_text(encoding="utf-8"))
     assert len(fdata["failures"]) >= MAX_RETRIES
-

@@ -7,31 +7,30 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 
+from schemas.opportunity import serialize_opportunity
+
 
 def render_opportunity_card(item: Dict[str, Any], expanded: bool = False) -> None:
     """
     Render a single opportunity as an expandable card.
 
-    Expects a FinalResult-shaped dict with keys:
-      opportunity, intent, score, knowledge, draft, compliance
+    Expects a canonical flat Opportunity-shaped dict.
     """
-    opp = item.get("opportunity", {})
-    intent = item.get("intent", {})
-    score = item.get("score", {})
+    opp = serialize_opportunity(item)
 
-    opp_id = opp.get("id", "unknown")
+    opp_id = opp.get("opportunity_id") or opp.get("id", "unknown")
     title = opp.get("title", "Untitled")[:80]
-    subreddit = opp.get("subreddit", "")
-    priority = score.get("priority_label", "--")
-    priority_score = score.get("priority_score", 0)
-    intent_label = intent.get("intent", "--")
-    confidence = intent.get("confidence", 0)
+    subreddit = opp.get("source", "")
+    priority = opp.get("priority_label", "--")
+    priority_score = opp.get("score", 0)
+    intent_label = opp.get("intent", "--")
+    confidence = opp.get("confidence", 0) / 100
 
     # Colour-coded priority badge
     badge_colors = {"hot": "red", "warm": "orange", "cold": "blue", "ignore": "gray"}
     badge = f":{badge_colors.get(priority, 'gray')}[{priority.upper()}]"
 
-    header = f"{badge}  **{title}**  |  r/{subreddit}  |  Score: {priority_score}"
+    header = f"{badge}  **{title}**  |  {subreddit or opp.get('platform', '--')}  |  Score: {priority_score}"
 
     with st.expander(header, expanded=expanded):
         col1, col2, col3 = st.columns(3)
@@ -47,12 +46,12 @@ def render_opportunity_card(item: Dict[str, Any], expanded: bool = False) -> Non
             st.text(body[:500] + ("..." if len(body) > 500 else ""))
 
         # Signals
-        signals = opp.get("opportunity_signals", [])
+        signals = opp.get("signals", [])
         if signals:
             st.markdown(f"**Signals:** {', '.join(signals)}")
 
         # Score breakdown
-        breakdown = score.get("scoring_breakdown", {})
+        breakdown = item.get("scoring_breakdown", {})
         if breakdown:
             st.markdown("**Score Breakdown:**")
             bd_cols = st.columns(len(breakdown))
@@ -73,19 +72,18 @@ def render_opportunity_card(item: Dict[str, Any], expanded: bool = False) -> Non
 
 def render_draft_card(item: Dict[str, Any]) -> None:
     """Render the draft and compliance info for a pipeline result."""
-    draft = item.get("draft", {})
-    compliance = item.get("compliance", {})
+    opp = serialize_opportunity(item)
 
-    draft_text = draft.get("draft", "No draft generated.")
-    tone = draft.get("tone", "--")
-    cta = draft.get("cta", "")
-    reasoning = draft.get("reasoning", "")
+    draft_text = opp.get("draft") or "No draft generated."
+    tone = opp.get("tone", "--")
+    cta = opp.get("cta", "")
+    reasoning = opp.get("reasoning", "")
 
-    approved = compliance.get("approved", False)
-    risk = compliance.get("risk_level", "--")
-    violations = compliance.get("violations", [])
-    safe_draft = compliance.get("safe_draft", "")
-    recommendation = compliance.get("recommendation", "")
+    approved = opp.get("compliance_approved", False)
+    risk = opp.get("risk_level", "--")
+    violations = opp.get("violations", [])
+    safe_draft = item.get("safe_draft", "")
+    recommendation = opp.get("recommendation", "")
 
     status_icon = ":green[Compliance: AUTO-PASS]" if approved else ":red[Compliance: AUTO-FAIL]"
 
@@ -115,7 +113,7 @@ def render_knowledge_card(item: Dict[str, Any]) -> None:
     """Render the knowledge context for a pipeline result."""
     knowledge = item.get("knowledge", {})
 
-    summary = knowledge.get("summary", "No knowledge summary available.")
+    summary = item.get("summary") or knowledge.get("summary", "No knowledge summary available.")
     sources = knowledge.get("sources", [])
     chunks = knowledge.get("relevant_context", [])
 

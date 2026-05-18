@@ -32,13 +32,17 @@ from __future__ import annotations
 
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from agents.opportunity_scanner.cache_manager import CacheManager
 from agents.opportunity_scanner.filters import OpportunityFilter, FilterConfig
 from providers.quora_provider import QuoraProvider
+from schemas.opportunity import serialize_opportunity
 from utils.dedup import cache_keys_for_posts, dedupe_exact_posts
-from utils.query_normalizer import normalize_queries
+from utils.query_normalizer import is_generic_standalone_query, platform_queries
+from utils.semantic_relevance import filter_by_semantic_relevance
+from utils.url_validator import normalize_url
 
 logger = logging.getLogger("signalforge.quora_scanner")
 
@@ -146,8 +150,8 @@ class QuoraScannerAgent:
         self._filter = OpportunityFilter(config=filter_config or self._quora_filter_config())
 
         self.default_keywords = keywords or [
-            "social media automation",
-            "workflow tools",
+            "business process automation implementation struggles",
+            "workflow automation tool recommendations for SaaS",
         ]
         self.stats = {"fetched": 0, "deduped": 0, "filtered": 0, "approved": 0}
 
@@ -166,6 +170,7 @@ class QuoraScannerAgent:
         self,
         keywords: Optional[List[str]] = None,
         limit_per_keyword: int = 10,
+        original_intent: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Run the full pipeline: fetch → normalise → deduplicate → filter → signal.
@@ -179,9 +184,9 @@ class QuoraScannerAgent:
             annotated with ``"opportunity_signals"``.
         """
         raw_kw = keywords or self.default_keywords
-        kw = normalize_queries(raw_kw) or self.default_keywords
+        kw = self._prepare_queries(raw_kw, original_intent=original_intent)
         if kw != raw_kw:
-            logger.info("Query normalization: raw=%s normalized=%s", raw_kw, kw)
+            logger.info("Quora intent query extraction: raw=%s semantic=%s", raw_kw, kw)
         logger.info("QuoraScannerAgent.scan() - keywords=%s", kw)
 
         # 1. Fetch
@@ -212,6 +217,24 @@ class QuoraScannerAgent:
         #    Quora posts don't have subreddits — pass through the platform-
         #    agnostic filter then re-detect with Quora-specific signals.
         filtered = self._filter_quora(deduped)
+        if isinstance(raw_kw, str):
+            raw_intent_text = raw_kw
+        else:
+            raw_intent_text = " ".join(str(item) for item in raw_kw)
+        relevance_intent = original_intent or raw_intent_text
+        if relevance_intent.strip():
+            before_relevance = len(filtered)
+            filtered = filter_by_semantic_relevance(
+                filtered,
+                relevance_intent,
+                threshold=0.22,
+            )
+            logger.info(
+                "Quora semantic relevance stage: input=%d kept=%d rejected=%d",
+                before_relevance,
+                len(filtered),
+                before_relevance - len(filtered),
+            )
         self.stats["filtered"] += len(filtered)
         logger.info(
             "Quora filter stage: input=%d kept=%d rejected=%d",
@@ -225,7 +248,41 @@ class QuoraScannerAgent:
         self._cache.mark_seen_batch(new_keys)
         self.stats["approved"] += len(filtered)
 
-        return filtered
+        return [
+            serialize_opportunity(
+                opportunity,
+                status="discovered",
+                pipeline_state="discovered",
+                can_mutate=False,
+            )
+            for opportunity in filtered
+        ]
+
+    def _prepare_queries(
+        self,
+        raw_keywords: List[str] | str,
+        *,
+        original_intent: Optional[str],
+    ) -> List[str]:
+        if isinstance(raw_keywords, str):
+            raw_list = [raw_keywords]
+        else:
+            raw_list = [str(item) for item in raw_keywords if str(item).strip()]
+
+        if original_intent:
+            candidates = raw_list
+        else:
+            candidates = platform_queries(raw_list, platform="quora", max_queries=4)
+
+        out: List[str] = []
+        for query in candidates:
+            clean = str(query).strip()
+            if not clean or is_generic_standalone_query(clean):
+                continue
+            if clean not in out:
+                out.append(clean)
+
+        return out or list(self.default_keywords)
 
     def generate_report(
         self, opportunities: List[Dict[str, Any]]
@@ -261,13 +318,23 @@ class QuoraScannerAgent:
     ) -> List[Dict[str, Any]]:
         """Fetch posts for every keyword and merge results."""
         all_posts: List[Dict[str, Any]] = []
-        for kw in keywords:
-            try:
-                posts = self._provider.fetch_posts(query=kw, limit=limit)
-                all_posts.extend(posts)
-                logger.info("Fetched %d posts for query '%s'", len(posts), kw)
-            except Exception as exc:
-                logger.error("Fetch failed for '%s': %s", kw, exc)
+
+        def fetch_keyword(kw: str) -> List[Dict[str, Any]]:
+            return self._provider.fetch_posts(query=kw, limit=min(limit, 2))
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = {pool.submit(fetch_keyword, kw): kw for kw in keywords}
+            for future in as_completed(futures):
+                kw = futures[future]
+                if len(all_posts) >= max(4, min(limit, 6)):
+                    continue
+                try:
+                    posts = future.result()
+                    all_posts.extend(posts)
+                    logger.info("Fetched %d posts for query '%s'", len(posts), kw)
+                except Exception as exc:
+                    logger.error("Fetch failed for '%s': %s", kw, exc)
+
         return all_posts
 
     def _normalise(
@@ -276,12 +343,21 @@ class QuoraScannerAgent:
         """Ensure every post conforms to the canonical Quora schema."""
         out: List[Dict[str, Any]] = []
         for post in posts:
+            url, url_valid = normalize_url(post.get("url", ""), "quora")
+            if not url_valid:
+                logger.info(
+                    "FILTER REJECT: id=%s platform=quora reason=invalid_url url=%s",
+                    post.get("id", "?"),
+                    post.get("url", ""),
+                )
+                continue
             out.append({
                 "id": post.get("id", ""),
                 "platform": post.get("platform", "quora"),
                 "title": post.get("title", ""),
                 "body": post.get("body", ""),
-                "url": post.get("url", ""),
+                "url": url,
+                "url_valid": True,
                 "score": int(post.get("score", 0)),
                 "author": post.get("author", ""),
                 "topic": post.get("topic", ""),

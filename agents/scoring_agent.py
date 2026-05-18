@@ -71,6 +71,9 @@ class ScoringConfig:
     ])
     urgency_bonus: float = 10.0
 
+    # 6. Knowledge fit -- deterministic scanner-side match to company capabilities
+    knowledge_fit_max_points: float = 12.0
+
     # Priority label thresholds
     hot_threshold: float = 80.0
     warm_threshold: float = 60.0
@@ -185,8 +188,8 @@ class OpportunityScoringAgent:
         """Compute individual scoring components."""
         intent = opp.get("intent", "ignore")
         confidence = float(opp.get("confidence", 0.0))
-        reddit_score = int(opp.get("score", 0))
-        signals = opp.get("opportunity_signals", [])
+        reddit_score = int(opp.get("source_score", opp.get("score", 0)))
+        signals = opp.get("opportunity_signals") or opp.get("signals", [])
         title = opp.get("title", "")
         body = opp.get("body", "")
 
@@ -207,11 +210,15 @@ class OpportunityScoringAgent:
         # 5. Urgency boost
         urgency = self._compute_urgency(title, body)
 
+        # 6. Knowledge-aware product fit boost
+        knowledge_fit = self._compute_knowledge_fit(opp)
+
         return {
             "intent_score": intent_score,
             "engagement_score": engagement,
             "signal_boost": signal_boost,
             "urgency_boost": urgency,
+            "knowledge_fit_boost": knowledge_fit,
         }
 
     def _compute_engagement(self, reddit_score: int) -> float:
@@ -236,6 +243,19 @@ class OpportunityScoringAgent:
             if word in text:
                 return self.config.urgency_bonus
         return 0.0
+
+    def _compute_knowledge_fit(self, opportunity: Dict[str, Any]) -> float:
+        raw_score = opportunity.get("knowledge_fit_score", 0.0)
+        try:
+            fit_score = float(raw_score)
+        except (TypeError, ValueError):
+            fit_score = 0.0
+
+        matches = opportunity.get("knowledge_capability_matches", [])
+        if isinstance(matches, list) and matches:
+            fit_score = max(fit_score, min(1.0, 0.18 * len(matches)))
+
+        return max(0.0, min(1.0, fit_score)) * self.config.knowledge_fit_max_points
 
     # -- Label & action mapping --------------------------------------------
 

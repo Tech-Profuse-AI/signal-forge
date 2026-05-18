@@ -226,7 +226,7 @@ def _boot_agents(*, live: bool) -> Dict[str, Any]:
         chunk_overlap=60,
         gemini_api_key=gemini_key,
     )
-    knowledge = ProductKnowledgeAgent(vector_store=vector_store, top_k=3)
+    knowledge = ProductKnowledgeAgent(vector_store=vector_store, top_k=5)
     logger.info("  |- ProductKnowledgeAgent     [OK]")
 
     drafting = DraftingAgent(drafting_llm)
@@ -255,6 +255,13 @@ def _boot_agents(*, live: bool) -> Dict[str, Any]:
 # ==================================================================
 # Pipeline Execution
 # ==================================================================
+
+def _emit_progress(callback: Any, stage: str, items_found: int, payload: Any = None) -> None:
+    try:
+        callback(stage, items_found, payload)
+    except TypeError:
+        callback(stage, items_found)
+
 
 def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = None) -> Dict[str, Any]:
     """
@@ -293,29 +300,15 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
         product_knowledge_agent=agents["knowledge"],
         drafting_agent=agents["drafting"],
         compliance_agent=agents["compliance"],
+        progress_callback=progress_callback,
     )
 
     logger.info("  Executing pipeline (streaming) ...")
-    state = workflow.initial_state(query)
 
     if progress_callback:
-        progress_callback("scanner", 0)
+        _emit_progress(progress_callback, "scanner", 0)
 
-    for output in workflow.graph.stream(state):
-        for node_name, node_update in output.items():
-            state.update(node_update)
-            if progress_callback:
-                next_stage_map = {
-                    "scanner": "intent",
-                    "intent": "scoring",
-                    "scoring": "product_knowledge",
-                    "product_knowledge": "drafting",
-                    "drafting": "compliance",
-                    "compliance": "complete",
-                }
-                next_stage = next_stage_map.get(node_name, node_name)
-                items_found = len(state.get("opportunities", []))
-                progress_callback(next_stage, items_found)
+    state = workflow.run_progressive(query)
 
     # -- 3. Stage-by-stage log -----------------------------------------
     stages = [
@@ -334,6 +327,21 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
         count = len(state.get(key, []))
         logger.info("  |- %-22s  %d items", stage_name, count)
 
+    timings = state.get("timings", {})
+    if timings:
+        logger.info("-" * 60)
+        logger.info("  Stage Timings")
+        logger.info("-" * 60)
+        for stage_name, stats in timings.items():
+            logger.info(
+                "  |- %-22s  count=%d avg=%.2fms max=%.2fms total=%.2fms",
+                stage_name,
+                int(stats.get("count", 0)),
+                float(stats.get("avg_ms", 0.0)),
+                float(stats.get("max_ms", 0.0)),
+                float(stats.get("total_ms", 0.0)),
+            )
+
     total_opportunities = len(state.get("opportunities", []))
     final_results: List[Dict[str, Any]] = state.get("final_results", [])
     errors: List[Dict[str, Any]] = state.get("errors", [])
@@ -344,7 +352,10 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
 
     for item in final_results:
         compliance = item.get("compliance", {})
-        if compliance.get("approved", False):
+        approved = item.get("compliance_approved")
+        if approved is None and isinstance(compliance, dict):
+            approved = compliance.get("approved", False)
+        if approved:
             approved_items.append(item)
         else:
             rejected_items.append(item)
@@ -388,13 +399,13 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
             except Exception as slack_exc:
                 logger.warning(
                     "Failed to send Slack card for %s: %s",
-                    item.get("opportunity", {}).get("id", "unknown"),
+                    item.get("opportunity_id") or item.get("id", "unknown"),
                     slack_exc,
                 )
         except Exception as exc:
             logger.warning(
                 "Failed to enqueue item %s: %s",
-                item.get("opportunity", {}).get("id", "unknown"),
+                item.get("opportunity_id") or item.get("id", "unknown"),
                 exc,
             )
 
@@ -413,8 +424,15 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
     for item in approved_items:
         opp = item.get("opportunity", {})
         intent_data = item.get("intent", {})
-        platform = str(opp.get("platform", "")).lower()
-        intent_label = str(intent_data.get("intent", "")).lower()
+        platform = str(
+            item.get("platform")
+            or (opp.get("platform", "") if isinstance(opp, dict) else "")
+        ).lower()
+        intent_label = (
+            str(intent_data.get("intent", "")).lower()
+            if isinstance(intent_data, dict)
+            else str(item.get("intent", "")).lower()
+        )
 
         # Extract score
         score = 0
@@ -426,7 +444,7 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
                 pass
         else:
             try:
-                score = int(opp.get("priority_score", 0))
+                score = int(score_block or item.get("priority_score") or 0)
             except (ValueError, TypeError):
                 pass
 
@@ -437,15 +455,15 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
         for item in publishable_items:
             draft = item.get("draft", {})
             opp = item.get("opportunity", {})
-            title = ""
+            title = str(item.get("title") or "")
             if isinstance(draft, dict):
                 title = draft.get("title") or draft.get("subject") or ""
             if not title and isinstance(opp, dict):
                 title = opp.get("title") or ""
             title = title or "Untitled"
-            platform = ""
+            platform = str(item.get("platform") or "")
             if isinstance(opp, dict):
-                platform = str(opp.get("platform", "")).lower()
+                platform = platform or str(opp.get("platform", "")).lower()
             logger.info(
                 "[DRY RUN] Would publish to %s: %s",
                 platform or "unknown", title,
@@ -491,6 +509,7 @@ def run_pipeline(query: str, *, live: bool = False, progress_callback: Any = Non
         "approved_items": approved_items,
         "rejected_items": rejected_items,
         "errors": errors,
+        "timings": timings,
         "review_queue_stats": queue_stats,
     }
 
@@ -559,11 +578,23 @@ def _print_summary(
             opp = item.get("opportunity", {})
             draft = item.get("draft", {})
             intent = item.get("intent", {})
-            opp_id = opp.get("id", "unknown")
-            title = opp.get("title", opp.get("query", "--"))[:50]
-            intent_label = intent.get("intent", "--")
-            tone = draft.get("tone", "--")
-            platform = opp.get("platform", "--")
+            opp_id = item.get("opportunity_id") or item.get("id", "unknown")
+            title = str(item.get("title") or "--")[:50]
+            if not title.strip("-") and isinstance(opp, dict):
+                title = str(opp.get("title", opp.get("query", "--")))[:50]
+            intent_label = (
+                intent.get("intent", "--")
+                if isinstance(intent, dict)
+                else item.get("intent", "--")
+            )
+            tone = (
+                draft.get("tone", "--")
+                if isinstance(draft, dict)
+                else item.get("tone", "--")
+            )
+            platform = item.get("platform") or (
+                opp.get("platform", "--") if isinstance(opp, dict) else "--"
+            )
             print(f"    {i}. [{opp_id}] [{platform}] {title}")
             print(f"       intent={intent_label}  tone={tone}")
         print("-" * 60)
@@ -609,7 +640,7 @@ def _send_slack_summary(
             except (ValueError, TypeError):
                 return 0
         try:
-            return int(item.get("opportunity", {}).get("priority_score", 0))
+            return int(score_block or item.get("priority_score") or 0)
         except (ValueError, TypeError):
             return 0
 
@@ -618,12 +649,18 @@ def _send_slack_summary(
     top_lines: List[str] = []
     for item in sorted_items:
         opp = item.get("opportunity", {})
-        platform = str(opp.get("platform", "unknown")).capitalize()
-        title_raw = str(opp.get("title", opp.get("query", "Untitled")))
+        platform = str(
+            item.get("platform")
+            or (opp.get("platform", "unknown") if isinstance(opp, dict) else "unknown")
+        ).capitalize()
+        title_raw = str(
+            item.get("title")
+            or (opp.get("title", opp.get("query", "Untitled")) if isinstance(opp, dict) else "Untitled")
+        )
         title = (title_raw[:57] + "...") if len(title_raw) > 60 else title_raw
         score = _extract_score(item)
         intent_block = item.get("intent", {})
-        intent_label = intent_block.get("intent", "unknown") if isinstance(intent_block, dict) else "unknown"
+        intent_label = intent_block.get("intent", "unknown") if isinstance(intent_block, dict) else item.get("intent", "unknown")
         top_lines.append(f"• [{platform}] {title} — score: {score} — {intent_label}")
 
     top_section = "\n".join(top_lines) if top_lines else "_No approved items._"

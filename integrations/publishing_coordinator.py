@@ -18,11 +18,16 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
+from schemas.opportunity import serialize_opportunity
+
 logger = logging.getLogger("signalforge.publishing_coordinator")
 
 
 def _extract_title(item: Dict[str, Any]) -> str:
     """Best-effort title extraction from a pipeline item."""
+    flat_title = str(item.get("title") or "").strip()
+    if flat_title:
+        return flat_title
     draft = item.get("draft", {})
     opp = item.get("opportunity", {})
     if isinstance(draft, dict):
@@ -38,6 +43,10 @@ def _extract_title(item: Dict[str, Any]) -> str:
 
 def _extract_draft_text(item: Dict[str, Any]) -> str:
     """Best-effort draft body extraction from a pipeline item."""
+    if isinstance(item.get("draft"), str):
+        return str(item.get("draft", "")).strip()
+    if item.get("final_draft"):
+        return str(item.get("final_draft", "")).strip()
     draft = item.get("draft", {})
     if isinstance(draft, dict):
         text = draft.get("draft") or draft.get("body") or draft.get("content") or ""
@@ -46,10 +55,10 @@ def _extract_draft_text(item: Dict[str, Any]) -> str:
 
 
 def _extract_url(item: Dict[str, Any]) -> str:
-    """Best-effort URL extraction from a pipeline item."""
-    opp = item.get("opportunity", {})
-    if isinstance(opp, dict):
-        return str(opp.get("url") or opp.get("thread_url") or "").strip()
+    """Return the canonical validated source URL for a pipeline item."""
+    flat = serialize_opportunity(item)
+    if flat.get("url_valid") is True and flat.get("url"):
+        return str(flat.get("url", "")).strip()
     return ""
 
 
@@ -118,7 +127,10 @@ class PublishingCoordinator:
 
         for item in approved_items:
             compliance = item.get("compliance", {})
-            if not isinstance(compliance, dict) or not compliance.get("approved"):
+            approved = item.get("compliance_approved")
+            if approved is None and isinstance(compliance, dict):
+                approved = compliance.get("approved")
+            if approved is not True:
                 continue
 
             platform = self._detect_platform(item)
@@ -253,11 +265,21 @@ class PublishingCoordinator:
             }
 
         publisher = self._get_medium_publisher()
+        flat = serialize_opportunity(item)
         pub_item = {
             "platform": "medium",
-            "opportunity": item.get("opportunity", {}),
-            "draft": item.get("draft", {}),
-            "compliance": item.get("compliance", {}),
+            "opportunity": flat,
+            "draft": {
+                "title": flat.get("title", ""),
+                "draft": flat.get("draft", ""),
+                "content": flat.get("draft", ""),
+                "tags": flat.get("tags", []),
+            },
+            "compliance": {
+                "approved": flat.get("compliance_approved", False),
+                "risk_level": flat.get("risk_level", ""),
+                "violations": flat.get("violations", []),
+            },
         }
         result = publisher.publish(pub_item)
         result["title"] = _extract_title(item)

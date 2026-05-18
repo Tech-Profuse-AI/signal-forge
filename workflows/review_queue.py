@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict
 from uuid import uuid4
+
+from schemas.opportunity import serialize_opportunity
 
 logger = logging.getLogger("signalforge.review_queue")
 
@@ -43,11 +46,21 @@ class ReviewActionResult(TypedDict):
 class ReviewQueue:
     """JSON-backed queue for human review items."""
 
-    def __init__(self, queue_path: Optional[str] = None, store: Any = None) -> None:
+    def __init__(
+        self,
+        queue_path: Optional[str] = None,
+        store: Any = None,
+        use_supabase: Optional[bool] = None,
+    ) -> None:
         default_path = Path(__file__).resolve().with_name(".review_queue.json")
+        explicit_queue_path = queue_path is not None
         self._queue_path = Path(queue_path) if queue_path else default_path
         self._queue_path.parent.mkdir(parents=True, exist_ok=True)
         self._store = store
+        self._use_supabase = self._resolve_supabase_preference(
+            explicit_queue_path=explicit_queue_path,
+            use_supabase=use_supabase,
+        )
         self._ensure_store()
         
         backend = "Supabase" if (self._store is not None and hasattr(self._store, "table")) else "JSON"
@@ -57,36 +70,35 @@ class ReviewQueue:
         """Add an item to the review queue, defaulting to pending status."""
         if not self._is_valid_item(item):
             raise ValueError(
-                "Review queue items must include dict values for opportunity, draft, and compliance."
+                "Review queue items must include a valid opportunity, URL, and draft."
             )
 
         store = self._load_store()
         review_id = self._build_unique_review_id(item, store["items"])
-        initial_status = self._clean_text(
-            str(item.get("review_status") or item.get("status") or "pending")
-        ).lower()
+        initial_status = self._clean_text(str(item.get("review_status") or "pending")).lower()
         if initial_status not in VALID_REVIEW_STATUSES:
             initial_status = "pending"
 
         timestamp = self._timestamp()
+        canonical = serialize_opportunity(
+            item,
+            status=initial_status,
+            can_mutate=True,
+        )
+        final_draft = self._initial_final_draft(item)
         record = {
+            **canonical,
+            "id": review_id,
             "review_id": review_id,
+            "draft": final_draft,
+            "final_draft": final_draft,
             "review_status": initial_status,
             "status": initial_status,
             "reviewer_action": self._clean_text(str(item.get("reviewer_action", ""))),
-            "final_draft": self._initial_final_draft(item),
-            "opportunity": deepcopy(item.get("opportunity", {})),
-            "draft": deepcopy(item.get("draft", {})),
-            "compliance": deepcopy(item.get("compliance", {})),
-            "intent": deepcopy(item.get("intent", {}))
-            if isinstance(item.get("intent"), dict)
-            else {},
-            "score": deepcopy(item.get("score", {}))
-            if isinstance(item.get("score"), dict)
-            else {},
             "review_channel": self._clean_text(str(item.get("review_channel", ""))),
             "reviewer": "",
             "created_at": timestamp,
+            "updated_at": timestamp,
             "dequeued_at": "",
             "reviewed_at": timestamp if initial_status != "pending" else "",
         }
@@ -151,8 +163,10 @@ class ReviewQueue:
         record["status"] = review_status
         record["reviewer_action"] = action
         record["final_draft"] = final_draft
+        record["draft"] = final_draft
+        record["updated_at"] = self._timestamp()
         record["reviewer"] = self._clean_text(str(item.get("reviewer", "")))
-        record["reviewed_at"] = self._timestamp()
+        record["reviewed_at"] = record["updated_at"]
 
         self._save_store(store)
         logger.info(
@@ -228,20 +242,24 @@ class ReviewQueue:
 
     def _load_store(self) -> Dict[str, List[Dict[str, Any]]]:
         if self._store is None:
-            # Try Supabase-backed store first; fall back to JSON.
-            try:
-                from storage.supabase_store import supabase_or_json_table_store  # noqa: PLC0415
-                from storage.base_store import JsonFileStore  # noqa: PLC0415
+            from storage.base_store import JsonFileStore  # noqa: PLC0415
 
-                store = supabase_or_json_table_store(
-                    table="review_queue",
-                    json_path=self._queue_path,
-                    json_default={"items": []},
-                    primary_key="review_id",
-                )
-                # Supabase table store returns list[rows]; we store dict payloads in "record".
-                self._store = store
-            except Exception:
+            if self._use_supabase:
+                # Try Supabase-backed store first; fall back to JSON.
+                try:
+                    from storage.supabase_store import supabase_or_json_table_store  # noqa: PLC0415
+
+                    store = supabase_or_json_table_store(
+                        table="review_queue",
+                        json_path=self._queue_path,
+                        json_default={"items": []},
+                        primary_key="review_id",
+                    )
+                    # Supabase table store returns list[rows]; we store dict payloads in "record".
+                    self._store = store
+                except Exception:
+                    self._store = JsonFileStore(path=self._queue_path, default={"items": []})
+            else:
                 self._store = JsonFileStore(path=self._queue_path, default={"items": []})
 
         # Supabase path
@@ -252,7 +270,7 @@ class ReviewQueue:
                 for row in rows:
                     if isinstance(row, dict) and isinstance(row.get("record"), dict):
                         items.append(row["record"])
-                return {"items": items}
+                return {"items": self._normalize_loaded_items(items)}
             except Exception:
                 # Fall through to JSON
                 pass
@@ -271,7 +289,7 @@ class ReviewQueue:
             raise ValueError(
                 f"Review queue store is malformed: {self._queue_path}"
             )
-        return data
+        return {"items": self._normalize_loaded_items(data["items"])}
 
     def _save_store(self, store: Dict[str, List[Dict[str, Any]]]) -> None:
         if self._store is not None and hasattr(self._store, "table") and getattr(self._store, "table", "") == "review_queue":
@@ -305,6 +323,18 @@ class ReviewQueue:
                 return record
         return None
 
+    @staticmethod
+    def _normalize_loaded_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        safe_items: List[Dict[str, Any]] = []
+        for record in items:
+            if not isinstance(record, dict):
+                continue
+            safe_items.append({
+                **record,
+                **serialize_opportunity(record, can_mutate=True),
+            })
+        return safe_items
+
     def _build_unique_review_id(
         self,
         item: Dict[str, Any],
@@ -314,7 +344,17 @@ class ReviewQueue:
         base_id = self._clean_text(str(item.get("review_id", "")))
         if not base_id:
             opportunity = item.get("opportunity", {})
-            opportunity_id = self._clean_text(str(opportunity.get("id", "")))
+            opportunity_id = self._clean_text(
+                str(
+                    item.get("opportunity_id")
+                    or item.get("id")
+                    or (
+                        opportunity.get("id", "")
+                        if isinstance(opportunity, dict)
+                        else ""
+                    )
+                )
+            )
             if opportunity_id:
                 base_id = f"review-{opportunity_id}"
             else:
@@ -329,6 +369,17 @@ class ReviewQueue:
 
     @staticmethod
     def _initial_final_draft(item: Dict[str, Any]) -> str:
+        flat_draft = ReviewQueue._clean_text(
+            str(item.get("final_draft") or item.get("draft_text") or "")
+        )
+        if flat_draft:
+            return flat_draft
+
+        if isinstance(item.get("draft"), str):
+            draft_text = ReviewQueue._clean_text(str(item.get("draft", "")))
+            if draft_text:
+                return draft_text
+
         compliance = item.get("compliance", {})
         draft = item.get("draft", {})
 
@@ -365,6 +416,10 @@ class ReviewQueue:
         if existing:
             return existing
 
+        existing_draft = ReviewQueue._clean_text(str(record.get("draft", "")))
+        if existing_draft:
+            return existing_draft
+
         if review_status == "rejected":
             return "Draft rejected for revision before any publishing step."
 
@@ -384,15 +439,36 @@ class ReviewQueue:
         return " ".join(str(text).split()).strip()
 
     @staticmethod
+    def _resolve_supabase_preference(
+        *,
+        explicit_queue_path: bool,
+        use_supabase: Optional[bool],
+    ) -> bool:
+        if use_supabase is not None:
+            return bool(use_supabase)
+
+        backend = os.environ.get("SIGNALFORGE_REVIEW_QUEUE_BACKEND", "").strip().lower()
+        if backend in {"supabase", "remote"}:
+            return True
+        if backend in {"json", "local", "file"}:
+            return False
+
+        # A caller-provided path is an explicit request for an isolated JSON
+        # queue.  This keeps tests, API-local queues, and temporary queues from
+        # accidentally reading a globally configured Supabase table.
+        return not explicit_queue_path
+
+    @staticmethod
     def _is_valid_item(item: Any) -> bool:
         if not isinstance(item, dict):
             return False
 
-        for key in ("opportunity", "draft", "compliance"):
-            if key not in item or not isinstance(item[key], dict):
-                return False
-
-        return bool(ReviewQueue._initial_final_draft(item))
+        normalized = serialize_opportunity(item, can_mutate=True)
+        return bool(
+            normalized.get("title")
+            and normalized.get("url")
+            and ReviewQueue._initial_final_draft(item)
+        )
 
     def __repr__(self) -> str:
         return f"<ReviewQueue path='{self._queue_path}'>"

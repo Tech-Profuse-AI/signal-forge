@@ -17,6 +17,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
+from utils.url_validator import normalize_url
+
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -161,11 +163,16 @@ class RedditProvider:
         """
         Convert a PRAW Submission into the SignalForge normalised schema.
         """
+        url, url_valid = normalize_url(
+            f"https://www.reddit.com{submission.permalink}",
+            "reddit",
+        )
         return {
             "platform": "reddit",
             "title": submission.title,
             "body": submission.selftext or "",
-            "url": f"https://www.reddit.com{submission.permalink}",
+            "url": url,
+            "url_valid": url_valid,
             "score": submission.score,
             "author": str(submission.author) if submission.author else "[deleted]",
             "subreddit": str(submission.subreddit),

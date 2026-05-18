@@ -69,8 +69,12 @@ export function useUpdateStatusMutation() {
 
       updateOpportunityEverywhere(queryClient, (items) =>
         items
-          .map((item) => (item.id === id ? { ...item, status: nextStatus } : item))
-          .filter((item) => item.status !== 'rejected' && item.status !== 'published'),
+          .map((item) => (
+            item.id === id
+              ? { ...item, status: nextStatus, review_status: status }
+              : item
+          ))
+          .filter((item) => !['rejected', 'published', 'posted'].includes(item.status)),
       );
 
       return { previous };

@@ -180,14 +180,15 @@ def test_full_signalforge_pipeline():
         assert len(state["compliance_results"]) == expected_len
         assert len(state["final_results"]) == expected_len
 
+        required_flat_keys = {"url", "draft", "score", "platform", "title", "status"}
         for item in state["final_results"]:
-            assert "opportunity" in item
-            assert "intent" in item
-            assert "score" in item
-            assert "knowledge" in item
-            assert "draft" in item
-            assert "compliance" in item
-            assert item["compliance"], "Compliance result must exist"
+            missing = required_flat_keys - set(item)
+            assert not missing, f"Final item missing canonical keys: {missing}"
+            assert isinstance(item["draft"], str)
+            assert isinstance(item["score"], int)
+            assert item["platform"]
+            assert item["title"]
+            assert item["status"]
 
         print("  Pipeline stages:")
         print(f"  - scanner: {len(state['opportunities'])}")

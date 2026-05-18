@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from providers.reddit_rss_provider import RedditRSSProvider
+from utils.url_validator import normalize_url
 from workflows.review_queue import ReviewQueue
 
 logger = logging.getLogger("signalforge.reddit_post")
@@ -75,10 +76,10 @@ class RedditPostProvider:
         Returns:
             {"status": "manual_required", "url": thread_url, "draft": draft_text}
         """
-        clean_url = str(thread_url).strip()
+        clean_url, url_valid = normalize_url(thread_url, "reddit")
         clean_draft = str(draft_text).strip()
-        if not clean_url:
-            raise ValueError("thread_url is required.")
+        if not url_valid or not clean_url:
+            raise ValueError("thread_url must be a valid Reddit post URL.")
         if not clean_draft:
             raise ValueError("draft_text is required.")
 

@@ -1,18 +1,22 @@
 import { useMemo, useState } from 'react';
-import { Moon, Settings, Sun } from 'lucide-react';
-import { DeveloperMode } from '../components/DeveloperMode';
+import {
+  Bar,
+  BarChart,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { OpportunityFeed } from '../components/OpportunityFeed';
 import { RunScanModal } from '../components/RunScanModal';
 import { Sidebar } from '../components/Sidebar';
 import { TopHeader } from '../components/TopHeader';
 import { getOpportunitySearchText } from '../api/normalizers';
-import { API_BASE_URL } from '../api/http';
-import { useHealth } from '../hooks/useHealth';
 import { useMetrics } from '../hooks/useMetrics';
 import { useOpportunities } from '../hooks/useOpportunities';
 import { usePipelineStatus } from '../hooks/usePipeline';
 import { formatRelativeTime } from '../lib/date';
-import { platformLabel } from '../lib/platforms';
 
 const EMPTY_OPPORTUNITIES = [];
 
@@ -27,13 +31,37 @@ function compareNewest(a, b) {
 function isInLiveSession(opportunity, session) {
   if (!session?.startedAt) return true;
   if (!opportunity.created_at) return false;
-
   return new Date(opportunity.created_at).getTime() >= new Date(session.startedAt).getTime();
 }
 
 function applyPlatformFilter(opportunities, platform) {
   if (platform === 'all') return opportunities;
-  return opportunities.filter((opportunity) => opportunity.platform === platform);
+  return opportunities.filter((o) => o.platform === platform);
+}
+
+function opportunityMergeKey(o) {
+  return o.url || `${o.platform}:${o.id}` || o.id;
+}
+
+function mergeOpportunities(persisted, live) {
+  const merged = new Map();
+  persisted.forEach((o) => merged.set(opportunityMergeKey(o), o));
+  live.forEach((o) => {
+    const key = opportunityMergeKey(o);
+    const existing = merged.get(key);
+    if (existing) {
+      merged.set(key, {
+        ...existing,
+        ...o,
+        review_id: existing.review_id || o.review_id,
+        can_mutate: existing.can_mutate || o.can_mutate,
+        status: existing.status !== 'pending' && existing.status !== 'scanning' ? existing.status : (o.status || existing.status),
+      });
+    } else {
+      merged.set(key, o);
+    }
+  });
+  return Array.from(merged.values());
 }
 
 function groupHistory(history) {
@@ -41,38 +69,149 @@ function groupHistory(history) {
     const date = new Date(session.startedAt);
     const label = Number.isNaN(date.getTime())
       ? 'Earlier'
-      : new Intl.DateTimeFormat(undefined, {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        }).format(date);
-
+      : new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric', year: 'numeric' }).format(date);
     groups[label] = groups[label] || [];
     groups[label].push(session);
     return groups;
   }, {});
 }
 
-function MinimalMetrics({ opportunities, postedToday, metricsLoading }) {
-  const readyToReview = opportunities.length;
-  const readyToPublish = opportunities.filter((item) => item.draft && item.url).length;
-  const metrics = [
-    ['Ready to Review', readyToReview],
-    ['Ready to Publish', readyToPublish],
-    ['Posted Today', metricsLoading ? '-' : postedToday],
-  ];
+function isTerminal(o) {
+  return o.status === 'published' || o.status === 'rejected';
+}
 
+function isApproved(o) {
+  return o.status === 'approved' || o.status === 'copied';
+}
+
+// ─── Analytics Page ──────────────────────────────────────────────────────────
+
+const PLATFORM_COLORS = {
+  reddit: '#ff4500',
+  quora: '#b92b27',
+  medium: '#17c964',
+  unknown: '#6b7280',
+};
+
+function MetricCard({ label, value, sub, accent }) {
   return (
-    <div className="minimal-metrics">
-      {metrics.map(([label, value]) => (
-        <div key={label} className="minimal-metric">
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </div>
-      ))}
+    <div className="analytics-card">
+      <span className="analytics-label">{label}</span>
+      <strong className="analytics-value" style={accent ? { color: accent } : undefined}>
+        {value ?? '—'}
+      </strong>
+      {sub && <span className="analytics-sub">{sub}</span>}
     </div>
   );
 }
+
+function AnalyticsPage({ opportunities, metrics, metricsLoading, history }) {
+  const inReview = opportunities.filter((o) => !isTerminal(o) && !isApproved(o)).length;
+  const readyToPost = opportunities.filter((o) => !isTerminal(o) && isApproved(o) && o.draft && o.url).length;
+  const postedToday = metricsLoading ? null : (metrics?.posted_today ?? 0);
+  const totalPending = metricsLoading ? null : (metrics?.total_pending ?? 0);
+
+  const winRate = totalPending > 0
+    ? Math.round((postedToday / (postedToday + totalPending)) * 100)
+    : null;
+
+  const byPlatform = metrics?.by_platform || {};
+  const chartData = Object.entries(byPlatform)
+    .filter(([, v]) => v > 0)
+    .map(([platform, count]) => ({
+      platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+      count,
+      color: PLATFORM_COLORS[platform] || PLATFORM_COLORS.unknown,
+    }));
+
+  return (
+    <div className="simple-page">
+      <div>
+        <p className="eyebrow">Overview</p>
+        <h1 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Analytics</h1>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">
+          Queue health and sourcing performance at a glance.
+        </p>
+      </div>
+
+      <div className="analytics-grid">
+        <MetricCard label="In review" value={inReview} sub="awaiting decision" />
+        <MetricCard label="Ready to post" value={readyToPost} sub="approved + drafted" accent="var(--accent)" />
+        <MetricCard label="Posted today" value={postedToday} sub="published this session" />
+        <MetricCard
+          label="Win rate"
+          value={winRate !== null ? `${winRate}%` : '—'}
+          sub="posted ÷ total"
+          accent={winRate >= 50 ? 'var(--accent)' : undefined}
+        />
+      </div>
+
+      {chartData.length > 0 && (
+        <div className="glass-panel border border-[var(--border)] p-6">
+          <h2 className="mb-4 text-sm font-semibold text-[var(--text-strong)]">Opportunities by platform</h2>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={chartData} barCategoryGap="28%">
+              <XAxis
+                dataKey="platform"
+                tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: 'var(--text-faint)', fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                contentStyle={{
+                  background: 'rgba(17,20,24,0.92)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: '#f7f7f5',
+                }}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry) => (
+                  <Cell key={entry.platform} fill={entry.color} fillOpacity={0.85} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--text-faint)]">Recent scans</h2>
+          <div className="space-y-2">
+            {history.slice(0, 5).map((session) => (
+              <div key={session.id} className="history-item">
+                <span>
+                  <strong>{session.query}</strong>
+                  <small>{formatRelativeTime(session.startedAt)}</small>
+                </span>
+                <span className="soft-muted text-xs">{(session.results || []).length} items</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {history.length === 0 && chartData.length === 0 && (
+        <div className="empty-panel empty-panel-large">
+          <p className="text-sm text-[var(--text-muted)]">
+            Run your first scan to see analytics here.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── History Page ─────────────────────────────────────────────────────────────
 
 function HistoryPage({ history, onOpenSession }) {
   const grouped = groupHistory(history);
@@ -81,17 +220,16 @@ function HistoryPage({ history, onOpenSession }) {
   return (
     <div className="simple-page">
       <div>
-        <h1 className="text-3xl font-semibold text-[var(--text-strong)]">History</h1>
+        <p className="eyebrow">Archive</p>
+        <h1 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Sourcing history</h1>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
-          Reopen previous searches without mixing them into today's workspace.
+          Reopen previous runs without mixing them into the active queue.
         </p>
       </div>
 
       {groupEntries.length === 0 ? (
         <div className="empty-panel">
-          <h2 className="text-base font-semibold text-[var(--text-strong)]">
-            No search history yet.
-          </h2>
+          <h2 className="text-base font-semibold text-[var(--text-strong)]">No previous sourcing runs.</h2>
         </div>
       ) : (
         <div className="history-timeline">
@@ -122,84 +260,35 @@ function HistoryPage({ history, onOpenSession }) {
   );
 }
 
-function IntegrationsPage({ healthQuery }) {
-  const apiConnected = healthQuery.isSuccess && healthQuery.data?.status === 'ok';
+// ─── Command Metrics bar ──────────────────────────────────────────────────────
+
+function CommandMetrics({ opportunities, postedToday, metricsLoading, isStreaming, foundCount }) {
+  const inReview = opportunities.filter((item) => !isTerminal(item) && !isApproved(item)).length;
+  const readyToPost = opportunities.filter(
+    (item) => !isTerminal(item) && isApproved(item) && item.draft && item.url,
+  ).length;
+  const metrics = [
+    [isStreaming ? 'Sourcing now' : 'In review', isStreaming ? foundCount : inReview],
+    ['Ready to post', readyToPost],
+    ['Posted today', metricsLoading ? '—' : (postedToday ?? '—')],
+  ];
 
   return (
-    <div className="simple-page">
-      <div>
-        <h1 className="text-3xl font-semibold text-[var(--text-strong)]">Integrations</h1>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">
-          Connection status from backend endpoints only.
-        </p>
-      </div>
-
-      <section className="settings-panel">
-        <div className="settings-row">
-          <div>
-            <h2>API</h2>
-            <p>{API_BASE_URL}</p>
-          </div>
-          <span className={apiConnected ? 'soft-ok' : 'soft-muted'}>
-            {apiConnected ? 'Connected' : healthQuery.isLoading ? 'Checking' : 'Unavailable'}
-          </span>
+    <div className="command-metrics">
+      {metrics.map(([label, value]) => (
+        <div key={label} className="command-metric">
+          <span>{label}</span>
+          <strong>{value}</strong>
         </div>
-        <div className="settings-row">
-          <div>
-            <h2>Slack</h2>
-            <p>Status is not exposed by the backend.</p>
-          </div>
-        </div>
-        <div className="settings-row">
-          <div>
-            <h2>Supabase</h2>
-            <p>Status is not exposed by the backend.</p>
-          </div>
-        </div>
-      </section>
+      ))}
     </div>
   );
 }
 
-function SettingsPage({ isLight, onToggleTheme, developerMode, onToggleDeveloperMode }) {
-  return (
-    <div className="simple-page">
-      <div>
-        <h1 className="text-3xl font-semibold text-[var(--text-strong)]">Settings</h1>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">
-          Keep the workspace quiet and publishing-focused.
-        </p>
-      </div>
-
-      <section className="settings-panel">
-        <div className="settings-row">
-          <div>
-            <h2>Appearance</h2>
-            <p>{isLight ? 'Light mode' : 'Dark mode'}</p>
-          </div>
-          <button type="button" onClick={onToggleTheme} className="button-secondary">
-            {isLight ? <Moon size={16} /> : <Sun size={16} />}
-            Toggle
-          </button>
-        </div>
-        <div className="settings-row">
-          <div>
-            <h2>Developer Mode</h2>
-            <p>{developerMode ? 'Visible' : 'Hidden'}</p>
-          </div>
-          <button type="button" onClick={onToggleDeveloperMode} className="button-secondary">
-            <Settings size={16} />
-            {developerMode ? 'Hide' : 'Show'}
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
+// ─── Workspace ────────────────────────────────────────────────────────────────
 
 export function Workspace() {
-  const [activeView, setActiveView] = useState('dashboard');
-  const [developerMode, setDeveloperMode] = useState(false);
+  const [activeView, setActiveView] = useState('workspace');
   const [isLight, setIsLight] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,38 +296,38 @@ export function Workspace() {
   const [sortOrder, setSortOrder] = useState('newest');
   const [activeSession, setActiveSession] = useState(null);
   const [history, setHistory] = useState([]);
+
   const pipelineQuery = usePipelineStatus();
+  const pipelineStatus = pipelineQuery.data;
   const opportunitiesQuery = useOpportunities({
-    pollingInterval: pipelineQuery.data?.running ? 3000 : 15000,
+    pollingInterval: pipelineStatus?.running ? 3000 : 15000,
   });
   const metricsQuery = useMetrics();
-  const healthQuery = useHealth();
   const backendOpportunities = opportunitiesQuery.data ?? EMPTY_OPPORTUNITIES;
+  const liveOpportunities = pipelineStatus?.live_opportunities ?? EMPTY_OPPORTUNITIES;
+  const mergedOpportunities = useMemo(
+    () => mergeOpportunities(backendOpportunities, liveOpportunities),
+    [backendOpportunities, liveOpportunities],
+  );
 
   const sessionOpportunities = useMemo(() => {
     if (activeSession?.mode === 'history') {
       return activeSession.results || EMPTY_OPPORTUNITIES;
     }
-
-    return backendOpportunities
-      .filter((opportunity) => isInLiveSession(opportunity, activeSession))
+    return mergedOpportunities
+      .filter((o) => isInLiveSession(o, activeSession))
       .sort(compareNewest);
-  }, [activeSession, backendOpportunities]);
+  }, [activeSession, mergedOpportunities]);
 
   const visibleOpportunities = useMemo(() => {
-    const searched = sessionOpportunities.filter((item) =>
-      getOpportunitySearchText(item).includes(searchTerm.trim().toLowerCase()),
-    );
-
+    const searchValue = searchTerm.trim().toLowerCase();
+    const searched = searchValue
+      ? sessionOpportunities.filter((item) => getOpportunitySearchText(item).includes(searchValue))
+      : sessionOpportunities;
     const filtered = applyPlatformFilter(searched, platformFilter);
-
-    return filtered.sort((a, b) => {
-      if (sortOrder === 'newest') {
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-      }
-      if (sortOrder === 'oldest') {
-        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-      }
+    return [...filtered].sort((a, b) => {
+      if (sortOrder === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      if (sortOrder === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
       return 0;
     });
   }, [platformFilter, sortOrder, searchTerm, sessionOpportunities]);
@@ -250,15 +339,13 @@ export function Workspace() {
         ...current.filter((item) => item.id !== activeSession.id),
       ]);
     }
-
     setActiveSession({
       id: sessionId(),
       mode: 'live',
       query,
       startedAt: new Date().toISOString(),
     });
-    setActiveView('dashboard');
-    setDeveloperMode(false);
+    setActiveView('workspace');
     setSearchTerm('');
     setPlatformFilter('all');
     setSortOrder('newest');
@@ -266,20 +353,20 @@ export function Workspace() {
 
   const openHistorySession = (session) => {
     setActiveSession({ ...session, mode: 'history' });
-    setActiveView('dashboard');
-    setDeveloperMode(false);
+    setActiveView('workspace');
     setSearchTerm('');
     setPlatformFilter('all');
     setSortOrder('newest');
   };
 
   const renderContent = () => {
-    if (developerMode) {
+    if (activeView === 'analytics') {
       return (
-        <DeveloperMode
+        <AnalyticsPage
           opportunities={sessionOpportunities}
           metrics={metricsQuery.data}
-          pipelineStatus={pipelineQuery.data}
+          metricsLoading={metricsQuery.isLoading}
+          history={history}
         />
       );
     }
@@ -288,34 +375,21 @@ export function Workspace() {
       return <HistoryPage history={history} onOpenSession={openHistorySession} />;
     }
 
-    if (activeView === 'integrations') {
-      return <IntegrationsPage healthQuery={healthQuery} />;
-    }
-
-    if (activeView === 'settings') {
-      return (
-        <SettingsPage
-          isLight={isLight}
-          onToggleTheme={() => setIsLight((value) => !value)}
-          developerMode={developerMode}
-          onToggleDeveloperMode={() => setDeveloperMode((value) => !value)}
-        />
-      );
-    }
-
     return (
       <>
-        <MinimalMetrics
+        <CommandMetrics
           opportunities={sessionOpportunities}
           postedToday={metricsQuery.data?.posted_today}
           metricsLoading={metricsQuery.isLoading}
+          isStreaming={Boolean(pipelineStatus?.running)}
+          foundCount={pipelineStatus?.items_found_so_far || liveOpportunities.length}
         />
         <OpportunityFeed
-          title={activeSession?.query || 'What should you post next?'}
+          title={activeSession?.query || 'Publishing queue'}
           subtitle={
             activeSession?.mode === 'history'
               ? 'Reopened from history.'
-              : 'Review the draft, make any edits, then copy and open the source.'
+              : 'Edit, approve, copy, and post from one focused queue.'
           }
           opportunities={sessionOpportunities}
           visibleOpportunities={visibleOpportunities}
@@ -323,10 +397,20 @@ export function Workspace() {
           onPlatformFilterChange={setPlatformFilter}
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
-          isLoading={opportunitiesQuery.isLoading}
+          isStreaming={Boolean(pipelineStatus?.running)}
+          streamStage={pipelineStatus?.current_stage}
+          streamCount={pipelineStatus?.items_found_so_far || liveOpportunities.length}
+          partialResults={pipelineStatus?.partial_results || {}}
+          isLoading={
+            opportunitiesQuery.isLoading
+            && !pipelineStatus?.running
+            && sessionOpportunities.length === 0
+          }
           isError={opportunitiesQuery.isError}
           error={opportunitiesQuery.error}
           onRetry={() => opportunitiesQuery.refetch()}
+          hasActiveSession={Boolean(activeSession)}
+          onStartScan={() => setIsScanOpen(true)}
         />
       </>
     );
@@ -335,23 +419,15 @@ export function Workspace() {
   return (
     <div className={`workspace-root ${isLight ? 'theme-light' : 'theme-dark'}`}>
       <div className="app-frame">
-        <Sidebar
-          activeView={activeView}
-          onChangeView={(view) => {
-            setActiveView(view);
-            setDeveloperMode(false);
-          }}
-          developerMode={developerMode}
-          onToggleDeveloperMode={() => setDeveloperMode((value) => !value)}
-        />
+        <Sidebar activeView={activeView} onChangeView={setActiveView} />
         <div className="workspace-shell">
           <TopHeader
             isLight={isLight}
-            onToggleTheme={() => setIsLight((value) => !value)}
+            onToggleTheme={() => setIsLight((v) => !v)}
             onOpenScan={() => setIsScanOpen(true)}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            scanRunning={pipelineQuery.data?.running}
+            sourceRunning={pipelineStatus?.running}
           />
           <main className="workspace-body">{renderContent()}</main>
         </div>
