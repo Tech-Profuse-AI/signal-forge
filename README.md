@@ -7,11 +7,14 @@ SignalForge is an AI-driven platform for discovering, classifying, and engaging 
 ```
 SignalForge/
 ├── agents/               # Intelligent agents (IntentAgent, OpportunityScanner)
+├── api/                  # FastAPI backend and REST endpoints for UI
 ├── config/               # Configuration management & brand guidelines
+├── frontend/             # React & Vite modern web dashboard
 ├── knowledge/            # Persistent knowledge bases (vector stores, context)
 ├── prompts/              # System prompts for various LLM agents
 ├── providers/            # External service providers (LLMs, Reddit/PRAW)
 ├── tests/                # Test suites (pytest)
+├── ui/                   # Legacy Streamlit internal interface
 ├── workflows/            # LangGraph workflow orchestration
 ├── main.py               # Application entry point and phase initialisation runner
 ├── requirements.txt      # Project dependencies
@@ -76,8 +79,24 @@ python run_signalforge.py --mock "AI workflow automation pain points"
 python run_signalforge.py --live "AI workflow automation pain points"
 ```
 
-### Streamlit Web Interface
-SignalForge provides an interactive dashboard to explore opportunities, review intents, and monitor the pipeline.
+### Modern Web Dashboard (Recommended)
+SignalForge now features a fully polished React frontend powered by Vite, backed by a fast and resilient FastAPI wrapper for pipeline streaming and status tracking.
+
+**1. Start the API Server:**
+```bash
+uvicorn api.main:app --reload --port 8000
+```
+
+**2. Start the React Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+You can then access the dashboard at `http://localhost:5173`.
+
+### Streamlit Web Interface (Legacy)
+SignalForge also provides a classic internal Streamlit dashboard to explore opportunities.
 ```bash
 streamlit run ui/app.py
 ```

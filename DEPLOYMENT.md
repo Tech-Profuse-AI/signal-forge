@@ -4,10 +4,10 @@ This guide outlines how to deploy the SignalForge system (Phase 26) to modern cl
 
 ## Overview
 SignalForge is containerized using `Dockerfile` and orchestrated via `docker-compose.yml`. 
-The `start.py` entrypoint allows you to boot the system in three different modes:
-- `--mode scheduler` (Default): Runs the continuous background task scheduler for processing pending pipeline workflows.
-- `--mode ui`: Boots the internal Streamlit dashboard (exposed on port 8501).
-- `--mode cli`: Runs a one-off pipeline execution (requires passing `--query`).
+The `start.py` entrypoint allows you to boot the legacy system components, but with the introduction of the modern React frontend, the architecture now typically consists of two main services:
+- **API Backend**: FastAPI application exposing the pipeline and queue (`uvicorn api.main:app`).
+- **Static Frontend**: A compiled Vite + React application.
+- **Background Scheduler**: Continuous background task scheduler (`python start.py --mode scheduler`).
 
 ## Environment Variables
 Before deploying, ensure you have set up the following environment variables. Do not commit `.env` to version control. Reference `.env.example` for a complete list.
@@ -29,26 +29,42 @@ Before deploying, ensure you have set up the following environment variables. Do
 
 ## Deploying to Railway
 
-Railway natively supports Dockerfile deployments.
+Railway natively supports Dockerfile deployments as well as static site builds.
 
-1. **Connect Repository:** Link your GitHub repository to a new Railway project.
-2. **Environment Variables:** Navigate to the "Variables" tab and bulk-import your `.env` contents.
-3. **Start Command:** Railway will automatically use the `CMD` defined in the `Dockerfile` (`python start.py --mode scheduler`).
-   - If you want to deploy the **Streamlit UI** alongside it, create a second service from the same repo and override the Custom Start Command to: `python start.py --mode ui`.
-4. **Healthchecks:** Railway automatically monitors the container's health based on the ports exposed, but you can explicitly configure Healthchecks in the service settings to run `python healthcheck.py`.
+1. **API Backend**:
+   - Create a service from the GitHub repository.
+   - Set the Custom Start Command to: `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
+   - Bulk-import your `.env` contents in the Variables tab.
+
+2. **Frontend Dashboard**:
+   - Create another service pointing to the `frontend/` directory of the repo.
+   - Build Command: `npm run build`
+   - Start Command: `npm run preview` (or host it as a static site).
+   - Ensure the frontend can communicate with the backend by setting API base URL variables.
+
+3. **Background Scheduler**:
+   - Create a third service from the repo.
+   - Start Command: `python start.py --mode scheduler`
+   - Supply the same environment variables as the backend.
 
 ---
 
 ## Deploying to Render
 
-Render supports background workers and web services natively.
+Render supports background workers, web services, and static sites natively.
 
-1. **New Web Service (For UI):**
-   - **Environment:** Docker
-   - **Start Command:** `python start.py --mode ui`
+1. **API Web Service (Backend):**
+   - **Environment:** Docker or Python
+   - **Start Command:** `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
    - **Environment Variables:** Add your secrets in the Render dashboard.
-2. **New Background Worker (For Scheduler):**
-   - **Environment:** Docker
+
+2. **Static Site (Frontend):**
+   - **Environment:** Static Site
+   - **Build Command:** `cd frontend && npm install && npm run build`
+   - **Publish Directory:** `frontend/dist`
+
+3. **Background Worker (Scheduler):**
+   - **Environment:** Docker or Python
    - **Start Command:** `python start.py --mode scheduler`
    - **Environment Variables:** Add your secrets.
 
@@ -66,11 +82,15 @@ python healthcheck.py
 ```
 This script returns a `0` exit code if all external services are reachable and configured, or a `1` if the system is unhealthy, making it fully compatible with Docker `HEALTHCHECK` instructions.
 
-## Local Testing
-
-You can simulate the production environment locally using Docker Compose:
+You can simulate the production environment locally using the CLI:
 
 ```bash
-docker-compose up --build
+# Start the API
+uvicorn api.main:app --reload --port 8000
+
+# Start the Frontend
+cd frontend
+npm run dev
 ```
-This will boot both the scheduler worker and the Streamlit UI, mimicking a full cloud deployment.
+
+Alternatively, use the existing Docker setup for the backend services.
