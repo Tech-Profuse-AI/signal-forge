@@ -1,80 +1,192 @@
-# SignalForge — Features
+# Tech Profuse - Services and Product Capabilities
 
-## Opportunity Discovery
+## Artificial Intelligence and Automation
 
-SignalForge's OpportunityScannerAgent continuously monitors Reddit for high-value engagement opportunities.
+### Agentic AI
 
-**Capabilities:**
-- Keyword-based scanning across multiple subreddits simultaneously
-- Smart filtering that rejects deleted posts, memes, bot spam, and low-effort content
-- Signal detection for help requests, recommendation asks, pain-point discussions, and workflow bottleneck posts
-- Deduplication cache to prevent re-surfacing previously seen opportunities
-- Configurable thresholds for minimum score and body length
-- Support for both live Reddit API (PRAW) and mock data modes
+Tech Profuse provides Agentic AI solutions that go beyond standard rule-based
+workflow automation. Agentic AI systems can make autonomous decisions, learn
+from data, and act independently without human fatigue.
 
-## Intent Classification
+Key performance specifications:
 
-The IntentAgent uses LLM-powered analysis to classify each discovered opportunity into actionable categories.
+- 92% faster task completion
+- 99% accuracy
+- 24/7 operation
 
-**Supported intent types:**
-- **Buying Intent** — User actively seeking tools or products to purchase
-- **Problem Intent** — User experiencing workflow pain or operational challenges
-- **Hiring Intent** — User looking for people, agencies, or service providers
-- **Competitor Mention** — User discussing or comparing competitor tools and platforms
-- **Feature Request** — User expressing desire for missing functionality
-- **Churn Risk** — User frustrated with current tools and considering alternatives
-- **Ignore** — Not actionable for engagement
+Primary Agentic AI use cases:
 
-**Technical details:**
-- Deterministic prompt design for consistent JSON output
-- Confidence scoring between 0.0 and 1.0
-- Business relevance assessment for each classification
-- Recommended action suggestions (respond, monitor, escalate, skip)
+- Lead qualification: AI agents qualify inquiries and hand high-intent leads
+  to human sales teams.
+- Voice call analytics: Calls are transcribed and analyzed for intent,
+  sentiment, and compliance.
+- HR interview screening: AI reviews resumes and asks role-specific questions
+  to identify top-fit applicants.
+- Customer support: 24/7 agents handle FAQs, order tracking, troubleshooting,
+  and routine support interactions.
 
-## Priority Scoring
+### Intelligent Data Processing
 
-The OpportunityScoringAgent ranks classified opportunities by business value.
+Tech Profuse Intelligent Data Processing, or IDP, applies AI and machine
+learning to replace manual data handling.
 
-**Scoring dimensions (0-100 scale):**
-- Intent weight — Higher scores for buying intent and churn risk
-- Confidence multiplier — Scales by LLM classification certainty
-- Engagement weight — Reddit upvotes indicate community validation
-- Signal boost — Bonus for help requests, pain points, recommendations, bottlenecks
-- Urgency detection — Bonus for time-sensitive language (urgent, ASAP, stuck)
+Capabilities:
 
-**Priority labels:**
-- **Hot (80+)** — Respond immediately, high business value
-- **Warm (60-79)** — Respond soon, strong potential
-- **Cold (30-59)** — Monitor, may become actionable
-- **Ignore (<30)** — Skip, not worth pursuing
+- Extracts meaningful patterns from complex datasets
+- Identifies anomalies and inconsistencies
+- Resolves data quality issues
+- Converts unstructured inputs such as emails, PDFs, invoices, and documents
+  into accurate structured output
+- Prepares processed data for immediate enterprise use
 
-## Draft Generation (Coming Soon)
+Benefits:
 
-AI-powered response drafting that matches subreddit culture and brand voice.
+- Eliminates repetitive manual data entry
+- Reduces processing cost
+- Improves data accuracy
+- Speeds up back-office and document-heavy workflows
 
-**Planned capabilities:**
-- RAG-powered context retrieval from product knowledge base
-- Subreddit tone matching
-- Brand guideline enforcement
-- Multiple draft variations for human selection
+## Enterprise Applications and Software Development
 
-## Compliance Checks (Coming Soon)
+### SAP Business One
 
-Automated review of all drafted responses against brand and platform rules.
+Tech Profuse delivers end-to-end SAP Business One implementation and migration
+services for growing businesses.
 
-**Planned checks:**
-- Reddit self-promotion ratio compliance
-- Subreddit-specific rule adherence
-- Brand voice consistency
-- Prohibited content filtering
-- Link and disclosure requirements
+Deployment options:
 
-## Slack Human-in-the-Loop (Coming Soon)
+- On-premises deployment
+- Cloud deployment
+- Microsoft SQL Server support
+- SAP HANA support
 
-Interactive approval workflow via Slack for draft review.
+Implementation methodology:
 
-**Planned capabilities:**
-- Opportunity notification cards with context
-- One-click approve/reject/edit workflow
-- Feedback loop for improving future drafts
-- Team assignment and escalation rules
+1. Discovery: Understand business needs and requirements.
+2. Assessment: Evaluate the current environment and identify roadblocks.
+3. Planning: Build a detailed roadmap with minimal disruption.
+4. Execution: Deploy, migrate, integrate, and configure the system.
+5. Support: Provide ongoing monitoring, issue resolution, and technical
+   support.
+
+Business benefits:
+
+- Increased operational efficiency
+- Real-time data for better decisions
+- Reduced overhead cost
+- Stronger enterprise resource planning for growing companies
+
+### Custom Application Development
+
+Tech Profuse builds custom, scalable web and enterprise applications using
+agile methodology and DevOps practices.
+
+Capabilities:
+
+- Tailored full-stack applications
+- Enterprise workflow applications
+- Cloud-ready software architecture
+- Integration with business systems
+- Cost-efficient delivery through a global nearshore model
+
+### Mobile Application Development
+
+Tech Profuse builds mobile applications for both iOS and Android with a
+cross-platform compatibility focus.
+
+Capabilities:
+
+- User-centric UI and UX
+- Cross-platform development
+- Robust data security
+- Integration with AI, IoT, AR, and other emerging technologies
+- Scalable architecture for business growth
+
+## Cybersecurity and Remote Access
+
+### Kaspersky Endpoint Security
+
+Tech Profuse provides Kaspersky endpoint protection for workstations, servers,
+and mobile devices.
+
+Product tiers:
+
+- Kaspersky Cloud Pro
+- Kaspersky Cloud Plus
+
+Security capabilities:
+
+- Malware protection
+- Ransomware protection
+- Phishing protection
+- Behavioral analysis
+- Machine learning detection
+- Threat intelligence
+- Real-time rapid response
+- Centralized cloud-based management
+
+Tech Profuse services include installation, configuration, ongoing monitoring,
+and support.
+
+### Plurilock AI / Cloud Codes
+
+Tech Profuse offers Plurilock AI, also referenced as Cloud Codes, through an
+exclusive India partnership. The platform is designed for Indian market
+configurations and was rated number one by InfoTech in 2023.
+
+Product tiers and capabilities:
+
+- Plurilock AI Access: IP, browser, location, and time restrictions.
+- Plurilock AI SSO: Access controls plus MFA, FIDO2 passwordless login,
+  device restriction, and Active Directory integration.
+- Plurilock AI Compliance: SSO and Access capabilities plus Google Drive share
+  scanning and filtering, session timeouts, and email compliance rules.
+- Plurilock AI DLP: Compliance capabilities plus clipboard restrictions,
+  screenshot blocking, external sharing restrictions, and Gmail blocking.
+
+### AnyDesk Reseller Services
+
+Tech Profuse is an authorized AnyDesk partner in India. The company provides
+localized pricing, licensing guidance, deployment, configuration, training, and
+support for remote desktop environments.
+
+AnyDesk capabilities:
+
+- TLS 1.2 security
+- RSA 2048 encryption
+- DeskRT codec for low-latency remote connections
+- Unattended access
+- File transfer
+- Session recording
+
+Tech Profuse value-add:
+
+- Setup and deployment
+- Security policy configuration
+- Granular permission planning
+- Two-factor authentication guidance
+- User training
+- Ongoing technical support
+
+## Cloud, Collaboration, and Analytics
+
+Tech Profuse supports modernization across AWS, Google Cloud Platform, and
+Microsoft Azure. The company also supports Google Workspace, Microsoft 365,
+Power BI, and Dynamics 365 for collaboration, reporting, analytics, CRM, and
+ERP modernization.
+
+## Digital Marketing
+
+Tech Profuse operates as a full-suite digital marketing and performance agency.
+
+Services:
+
+- Search engine optimization: Improve website structure, content, keyword
+  targeting, and organic traffic.
+- Content marketing: Create authoritative content tailored to target audiences.
+- Digital advertising: Run SEM and PPC campaigns across search, display, and
+  social channels with ROI optimization.
+- Social media marketing: Build brand loyalty and engagement across social
+  platforms.
+- Web design and marketing: Design visually appealing, high-performance
+  websites focused on conversion.

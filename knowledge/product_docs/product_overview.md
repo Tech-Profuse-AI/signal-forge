@@ -1,40 +1,75 @@
-# SignalForge — Product Overview
+# Tech Profuse - Company Overview
 
-## What is SignalForge?
+## What is Tech Profuse?
 
-SignalForge is an AI-powered social media engagement platform that transforms how teams discover, evaluate, and respond to high-value conversations on Reddit and other social platforms.
+Tech Profuse is an IT consulting and technology services company with more
+than 15 years of industry experience. The company helps organizations adapt to
+fast-moving digital environments through cloud solutions, advanced artificial
+intelligence, enterprise business applications, custom software, digital
+marketing, cybersecurity, and remote access solutions.
 
-Instead of manually scanning dozens of subreddits, SignalForge's intelligent agents automatically find opportunities where your expertise can genuinely help — then draft authentic, community-appropriate responses that build trust and authority.
+Tech Profuse is headquartered in Hyderabad, India, with an international
+presence that includes The Woodlands, Texas, Australia, and Singapore.
 
-## How It Works
+## Company Snapshot
 
-SignalForge operates through a multi-agent pipeline:
+- Experience: 15+ years
+- Projects completed: 750+ projects, with some business sections reporting
+  12k+ aggregate deployments
+- Client satisfaction: 100%
+- Founder and CEO: Mr. Ravi Kiran
+- CTO: Jeyasudha G
 
-1. **Opportunity Discovery** — Continuously scans Reddit for posts matching your target keywords, filtering out noise (memes, spam, deleted content) to surface only actionable conversations.
+## Core Positioning
 
-2. **Intent Classification** — An LLM-powered agent analyzes each opportunity to determine the user's underlying intent: are they buying, venting, hiring, or requesting features?
+Tech Profuse acts as a technology transformation partner for small, midsize,
+and growing enterprises. Its work spans strategy, implementation, migration,
+integration, deployment, security configuration, training, and ongoing support.
 
-3. **Priority Scoring** — A weighted scoring engine ranks opportunities by business value, considering intent type, community engagement, signal strength, and urgency.
+The company combines consulting, engineering, cloud infrastructure, AI
+automation, cybersecurity, and managed technology services so customers can
+modernize operations without managing multiple disconnected vendors.
 
-4. **Contextual Drafting** — Using RAG (Retrieval-Augmented Generation), SignalForge retrieves relevant product knowledge and generates response drafts that match each subreddit's culture and tone.
+## Strategic Partnerships and Platforms
 
-5. **Compliance & Review** — Every draft passes through brand guideline checks and a human-in-the-loop review via Slack before posting, ensuring quality and authenticity.
+Tech Profuse delivers solutions through major technology ecosystems and
+authorized partner relationships:
 
-## Core Philosophy
+- Google Cloud and Google Workspace for collaboration, work transformation,
+  cloud productivity, and secure hybrid work
+- Microsoft Azure for cloud infrastructure and modernization
+- Microsoft 365 for collaboration and productivity
+- Microsoft Power BI for reporting, dashboards, and analytics
+- Microsoft Dynamics 365 for CRM and ERP workflows
+- AWS for cloud infrastructure, migration, and modernization
+- SAP for enterprise resource planning, including SAP Business One
+- Kaspersky for endpoint security
+- Plurilock AI, also referenced as Cloud Codes, for identity, access,
+  compliance, and data loss prevention controls
+- AnyDesk as an authorized partner in India for remote desktop licensing,
+  deployment, security policy setup, and support
 
-- **Authenticity First** — SignalForge is not a spam tool. Every interaction is designed to be genuinely helpful to the community.
-- **Human in the Loop** — No response is posted without human approval. The AI assists; humans decide.
-- **Brand Safety** — Built-in compliance checks enforce Reddit's rules, subreddit guidelines, and your brand's voice.
-- **Measurable ROI** — Track which conversations lead to engagement, awareness, and conversions.
+## Service Branches
 
-## Who Uses SignalForge?
+Tech Profuse services are organized across six primary branches:
 
-- Marketing teams seeking authentic Reddit engagement
-- Developer relations teams monitoring technical discussions
-- SaaS companies looking for lead generation through community participation
-- Agencies managing multiple client accounts across subreddits
-- Community managers who need to scale their engagement efforts
+1. Artificial intelligence and automation
+2. Intelligent data processing
+3. Enterprise applications and SAP Business One
+4. Custom web, enterprise, and mobile application development
+5. Cybersecurity, cloud security, identity, compliance, DLP, and remote access
+6. Digital marketing, SEO, content, advertising, social media, and conversion
+   focused web design
 
-## Key Differentiator
+## Customer Outcomes
 
-Unlike traditional social media schedulers (Hootsuite, Buffer, Sprout Social), SignalForge understands that Reddit is a conversation platform, not a broadcasting channel. It focuses on discovery and authentic engagement rather than scheduling and posting.
+Tech Profuse focuses on measurable business outcomes:
+
+- Faster operations through AI and automation
+- Better decision-making through real-time data and analytics
+- Reduced manual data entry and processing cost
+- Secure collaboration across hybrid and remote teams
+- Stronger endpoint, identity, compliance, and data protection controls
+- Scalable cloud and ERP foundations for growing businesses
+- Cost-efficient software delivery through agile development, DevOps, and a
+  global nearshore model

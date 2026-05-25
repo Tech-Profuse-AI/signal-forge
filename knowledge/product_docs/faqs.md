@@ -1,91 +1,210 @@
-# SignalForge — Frequently Asked Questions
+# Tech Profuse - Frequently Asked Questions
 
 ## General
 
-### What is SignalForge?
+### What is Tech Profuse?
 
-SignalForge is an AI-powered social media engagement platform that helps teams discover, evaluate, and respond to high-value conversations on Reddit. It uses a multi-agent pipeline to find relevant discussions, classify user intent, prioritize opportunities by business value, and draft authentic responses — all with human approval before posting.
+Tech Profuse is an IT consulting and technology services company with more
+than 15 years of experience. It helps organizations modernize through cloud,
+AI, automation, enterprise applications, cybersecurity, software development,
+remote access, and digital marketing services.
 
-### How does SignalForge work?
+### Where is Tech Profuse located?
 
-SignalForge uses a five-stage pipeline:
-1. **Discovery** — Scans Reddit for keyword matches, filtering out spam and noise
-2. **Classification** — AI classifies each post's intent (buying, problem, hiring, etc.)
-3. **Scoring** — Ranks opportunities by business value using engagement, signals, and urgency
-4. **Drafting** — Generates context-aware response drafts using product knowledge (RAG)
-5. **Review** — Human-in-the-loop approval via Slack before any response is posted
+Tech Profuse is headquartered in Hyderabad, India. The company also has an
+international footprint that includes The Woodlands, Texas, Australia, and
+Singapore.
 
-### Who uses SignalForge?
+### Who leads Tech Profuse?
 
-SignalForge is designed for marketing teams, developer relations, SaaS companies, digital agencies, community managers, and HR teams — anyone who needs to engage authentically at scale on Reddit and social platforms.
+Tech Profuse is led by Mr. Ravi Kiran, Founder and CEO, and Jeyasudha G, CTO.
 
-### Is SignalForge a spam tool?
+### What are Tech Profuse's key company metrics?
 
-Absolutely not. SignalForge is built on the principle of authentic engagement. Every response is designed to genuinely help the community member. Built-in compliance checks enforce Reddit's rules, and no response is posted without human approval. The goal is to add value to conversations, not to spam them.
+Tech Profuse has 15+ years of experience, 750+ completed projects, some
+business sections reporting 12k+ aggregate deployments, and 100% client
+satisfaction.
 
-## Features & Capabilities
+### Which technology partners and platforms does Tech Profuse work with?
 
-### What platforms does SignalForge support?
+Tech Profuse works with Google Cloud and Google Workspace, Microsoft Azure,
+Microsoft 365, Power BI, Dynamics 365, AWS, SAP, Kaspersky, Plurilock AI /
+Cloud Codes, and AnyDesk.
 
-Currently, SignalForge focuses on Reddit as the primary platform, using PRAW (Python Reddit API Wrapper) for data access. The architecture is designed to support additional platforms in future phases.
+## Cloud and Enterprise Technology
 
-### What types of opportunities does SignalForge detect?
+### What cloud platforms does Tech Profuse support?
 
-SignalForge identifies several types of actionable conversations:
-- **Help requests** — Users asking for advice or solutions
-- **Recommendation requests** — Users seeking tool or product suggestions
-- **Pain point discussions** — Users venting about workflow frustrations
-- **Workflow bottlenecks** — Users describing scaling challenges
-- **Competitor mentions** — Users discussing or comparing competing products
-- **Feature requests** — Users wishing for capabilities that don't exist yet
+Tech Profuse supports Amazon Web Services, Google Cloud Platform, and Microsoft
+Azure. Services include migration, modernization, infrastructure consulting,
+and DevOps support.
 
-### How does the scoring system work?
+### Does Tech Profuse support Google Workspace?
 
-Opportunities are scored on a 0-100 scale across five dimensions:
-- Intent weight (how valuable is the intent type)
-- Confidence multiplier (how certain is the classification)
-- Engagement weight (Reddit upvotes as community validation)
-- Signal boost (bonus for high-value signals like help requests)
-- Urgency detection (bonus for time-sensitive language)
+Yes. Tech Profuse supports Google Workspace and Google work transformation for
+small and midsize businesses, including secure collaboration and migration from
+legacy work environments.
 
-Scores map to priority labels: Hot (80+), Warm (60-79), Cold (30-59), Ignore (<30).
+### Does Tech Profuse work with Microsoft technologies?
 
-### Does SignalForge auto-post responses?
+Yes. Tech Profuse supports Microsoft Azure, Microsoft 365, Power BI, and
+Dynamics 365 for cloud infrastructure, collaboration, analytics, CRM, and ERP
+workflows.
 
-No. SignalForge follows a strict human-in-the-loop model. AI drafts response suggestions, but a human team member must review and approve every response before it is posted. This ensures quality, authenticity, and compliance.
+### Does Tech Profuse handle SAP Business One setup?
 
-### What LLM providers are supported?
+Yes. Tech Profuse manages the complete SAP Business One lifecycle, including
+discovery, assessment, planning, execution, deployment, migration, and ongoing
+support.
 
-SignalForge supports multiple LLM providers through a swappable abstraction layer:
-- **Google Gemini** (primary, production-ready)
-- **OpenAI GPT** (planned)
-- **Anthropic Claude** (planned)
+### What SAP Business One deployment options are available?
 
-## Technical
+SAP Business One can be deployed on-premises or in the cloud. Tech Profuse
+supports Microsoft SQL Server and SAP HANA environments.
 
-### How is product knowledge managed?
+## Artificial Intelligence and Automation
 
-SignalForge uses a RAG (Retrieval-Augmented Generation) architecture. Product documentation is chunked, embedded, and stored in a ChromaDB vector database. When drafting responses, the system retrieves the most relevant knowledge chunks to inform the AI's output.
+### What is Agentic AI?
 
-### What about data privacy?
+Agentic AI is an advanced form of AI that goes beyond predefined automation.
+It can make autonomous decisions, learn from data, and act independently.
+Tech Profuse positions Agentic AI for 24/7 operation, 92% faster task
+completion, and 99% accuracy.
 
-All data processing happens locally or within your configured cloud environment. Reddit data is processed in-memory and only engagement-relevant metadata is cached. No user data is sent to external services beyond the configured LLM API for text generation.
+### How is Agentic AI different from standard automation?
 
-### Can I customize the scoring weights?
+Standard automation follows fixed rules. Agentic AI can independently evaluate
+situations, make decisions, and adapt based on data. Examples include lead
+qualification, call analysis, candidate screening, and customer support.
 
-Yes. The scoring engine uses a configurable `ScoringConfig` dataclass where you can adjust intent weights, engagement scaling, signal boost values, urgency bonus, and priority label thresholds.
+### What Agentic AI use cases does Tech Profuse offer?
 
-### How does deduplication work?
+Tech Profuse offers Agentic AI for lead qualification, voice call analytics,
+HR interview screening, and customer support automation.
 
-SignalForge maintains a JSON-backed cache of all previously seen post IDs. Posts that have already been processed are automatically skipped in subsequent scans, preventing duplicate engagement.
+### What is Intelligent Data Processing?
 
-## Benefits
+Intelligent Data Processing, or IDP, uses AI and machine learning to extract,
+clean, structure, and validate data from unstructured sources such as emails,
+PDFs, invoices, and other documents.
 
-### Why use SignalForge instead of manual Reddit engagement?
+### What are the benefits of IDP?
 
-- **Time savings** — Reduces 4+ hours of daily manual scanning to minutes
-- **Consistency** — Ensures no high-value conversation is missed
-- **Quality** — AI-assisted drafts maintain brand voice consistency
-- **Compliance** — Automated checks prevent guideline violations
-- **Scale** — Monitor unlimited subreddits and keywords simultaneously
-- **Measurability** — Track engagement ROI with analytics
+IDP reduces manual data entry, cuts processing costs, improves data accuracy,
+detects anomalies, resolves inconsistencies, and prepares enterprise-ready
+structured output.
+
+## Software and Mobile Development
+
+### Does Tech Profuse build custom applications?
+
+Yes. Tech Profuse builds custom web, enterprise, and full-stack applications
+using agile methodology and DevOps practices.
+
+### Does Tech Profuse build mobile applications?
+
+Yes. Tech Profuse builds cross-platform mobile applications for iOS and
+Android, with user-centric UI and UX, strong data security, and integration
+with technologies such as AI, IoT, and AR.
+
+### What is Tech Profuse's Global Nearshore advantage?
+
+The Global Nearshore model is Tech Profuse's delivery approach for combining
+cost-efficient development with high-quality engineering and business
+alignment.
+
+## Cybersecurity and Remote Access
+
+### Does Tech Profuse offer cloud-based security?
+
+Yes. Tech Profuse provides Kaspersky Endpoint Security Cloud Pro and Cloud
+Plus, along with Plurilock AI / Cloud Codes for access control, SSO,
+compliance, and data loss prevention.
+
+### What is Kaspersky Endpoint Security used for?
+
+Kaspersky Endpoint Security protects workstations, servers, and mobile devices
+from malware, ransomware, phishing, and other threats. Tech Profuse provides
+installation, configuration, ongoing monitoring, and support.
+
+### What are Kaspersky Cloud Pro and Cloud Plus?
+
+Kaspersky Cloud Pro and Cloud Plus are cloud-managed endpoint protection tiers
+that support centralized security management, behavioral analysis, machine
+learning, threat intelligence, and real-time rapid response.
+
+### What is Plurilock AI / Cloud Codes?
+
+Plurilock AI, also referenced as Cloud Codes, is a security platform offered by
+Tech Profuse through an exclusive India partnership. It supports access
+controls, SSO, MFA, compliance, and DLP for Indian market configurations.
+
+### What does Plurilock AI Access include?
+
+Plurilock AI Access includes IP, browser, location, and time restrictions.
+
+### What does Plurilock AI SSO include?
+
+Plurilock AI SSO includes Access features plus MFA, FIDO2 passwordless login,
+device restriction, and Active Directory integration.
+
+### What does Plurilock AI Compliance include?
+
+Plurilock AI Compliance includes SSO and Access capabilities plus Google Drive
+share scanning and filtering, session timeouts, and email compliance rules.
+
+### What does Plurilock AI DLP include?
+
+Plurilock AI DLP includes Compliance capabilities plus clipboard restrictions,
+screenshot blocking, external sharing restrictions, and Gmail blocking.
+
+### Why buy AnyDesk through Tech Profuse instead of directly?
+
+Tech Profuse is an authorized AnyDesk partner in India. It offers localized
+pricing, transparent licensing advice, secure configuration, granular
+permissions guidance, two-factor authentication guidance, user training, and
+ongoing technical support.
+
+### What AnyDesk features does Tech Profuse support?
+
+Tech Profuse supports AnyDesk features including TLS 1.2 security, RSA 2048
+encryption, DeskRT low-latency connections, unattended access, file transfer,
+and session recording.
+
+## Digital Marketing
+
+### What digital marketing services does Tech Profuse provide?
+
+Tech Profuse provides SEO, content marketing, SEM/PPC digital advertising,
+social media marketing, and web design focused on conversion.
+
+### Does Tech Profuse provide SEO services?
+
+Yes. Tech Profuse optimizes website structure, content, and keywords to grow
+organic traffic.
+
+### Does Tech Profuse run paid advertising campaigns?
+
+Yes. Tech Profuse runs targeted SEM and PPC campaigns across display networks,
+search, and social platforms with a focus on ROI.
+
+### Does Tech Profuse design marketing websites?
+
+Yes. Tech Profuse designs visually appealing, high-performance websites built
+for user conversion.
+
+## Success Stories
+
+### What work did Tech Profuse do for Welburn Candles?
+
+Welburn Candles is one of the largest luxury candle manufacturers in
+Bangalore. Tech Profuse modernized its eco-friendly manufacturing unit by
+implementing robust IT technology and collaboration tools, helping the company
+scale bespoke product lines efficiently.
+
+### What work did Tech Profuse do for Nikkou Logistics Pvt Ltd?
+
+Nikkou Logistics Pvt Ltd is a logistics aggregator handling urban logistics
+through a network of more than 700 truckers. Tech Profuse provided technology
+solutions to help Nikkou support large customers including Amazon, Flipkart,
+ITC, Myntra, and Big Basket.
