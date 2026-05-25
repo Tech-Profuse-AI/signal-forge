@@ -320,7 +320,7 @@ class QuoraScannerAgent:
         all_posts: List[Dict[str, Any]] = []
 
         def fetch_keyword(kw: str) -> List[Dict[str, Any]]:
-            return self._provider.fetch_posts(query=kw, limit=min(limit, 2))
+            return self._provider.fetch_posts(query=kw, limit=min(limit, 3))
 
         with ThreadPoolExecutor(max_workers=3) as pool:
             futures = {pool.submit(fetch_keyword, kw): kw for kw in keywords}

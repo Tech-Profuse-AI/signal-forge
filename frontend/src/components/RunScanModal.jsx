@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, X, Zap } from 'lucide-react';
 import { useRunScanMutation } from '../hooks/usePipeline';
+import { PLATFORM_BADGES } from '../lib/platforms';
 import { useToast } from './toast';
-
-const PLATFORM_BADGES = [
-  { label: 'Reddit', color: '#ff4500' },
-  { label: 'Quora', color: '#b92b27' },
-  { label: 'Medium', color: '#17c964' },
-];
 
 export function RunScanModal({ isOpen, onClose, onScanStarted }) {
   const [query, setQuery] = useState('');

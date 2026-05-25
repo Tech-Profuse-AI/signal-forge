@@ -192,7 +192,7 @@ class QuoraProvider:
 
         # Cap crawl targets: top Quora results carry most of the useful
         # question intent, and crawling is the slowest scanner operation.
-        max_crawl = min(2, limit)
+        max_crawl = self._crawl_target_limit(limit)
         crawl_urls = urls[:max_crawl]
         logger.info(
             "Discovered %d Quora URLs for '%s' — valid %d — crawling %d",
@@ -261,6 +261,15 @@ class QuoraProvider:
                 logger.warning("Firecrawl search failed, falling back to DuckDuckGo: %s", exc)
 
         return self._duckduckgo_search(query, limit)
+
+    @staticmethod
+    def _crawl_target_limit(limit: int) -> int:
+        """Bound live page crawling while allowing enough diversity per query."""
+        try:
+            requested = int(limit)
+        except (TypeError, ValueError):
+            requested = 1
+        return max(1, min(3, requested))
 
     def _serp_api_search(self, query: str, limit: int) -> List[str]:
         """Use SerpAPI to run a site:quora.com search."""
@@ -359,14 +368,35 @@ class QuoraProvider:
             )
             resp.raise_for_status()
 
-            # Extract href values pointing to quora.com
             urls: List[str] = []
-            href_pattern = re.compile(
-                r'href="(https?://(?:www\.)?quora\.com/[^"]+)"',
-                re.IGNORECASE,
-            )
-            for match in href_pattern.finditer(resp.text):
-                url = match.group(1)
+
+            class ResultLinkParser(HTMLParser):
+                def __init__(self) -> None:
+                    super().__init__()
+                    self.hrefs: List[str] = []
+
+                def handle_starttag(
+                    self,
+                    tag: str,
+                    attrs: List[tuple[str, Optional[str]]],
+                ) -> None:
+                    if tag.lower() != "a":
+                        return
+                    attr_map = {name.lower(): value or "" for name, value in attrs}
+                    href = attr_map.get("href", "")
+                    if href:
+                        self.hrefs.append(href)
+
+            parser = ResultLinkParser()
+            parser.feed(resp.text)
+
+            href_pattern = re.compile(r'https?://[^"\']+', re.IGNORECASE)
+            candidates = list(parser.hrefs)
+            candidates.extend(match.group(0) for match in href_pattern.finditer(resp.text))
+
+            for url in candidates:
+                if url.startswith("/"):
+                    url = f"https://duckduckgo.com{url}"
                 cleaned, valid = normalize_url(url, "quora")
                 if valid and cleaned not in urls:
                     urls.append(cleaned)

@@ -168,3 +168,23 @@ def test_entry_to_raw_accepts_t3_with_no_link():
     result = RedditRSSProvider._entry_to_raw(FakeEntry())
     assert result is not None, "t3_ entries should be accepted"
     assert result["entry_id"] == "t3_abc123"
+
+
+def test_candidate_feed_urls_sanitize_and_add_fallbacks():
+    """Live RSS search should clamp limits and include conservative fallbacks."""
+    from providers.reddit_rss_provider import RedditRSSProvider
+
+    urls = RedditRSSProvider._candidate_feed_urls(
+        query="workflow automation",
+        limit=500,
+        subreddit="r/SaaS",
+        time_filter="invalid",
+    )
+
+    assert len(urls) == 3
+    assert all("limit=100" in url for url in urls)
+    assert all("/r/SaaS/search.rss" in url for url in urls)
+    assert "sort=relevance" in urls[0]
+    assert "t=week" in urls[0]
+    assert "t=all" in urls[1]
+    assert "sort=new" in urls[2]

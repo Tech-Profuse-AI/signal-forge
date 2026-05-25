@@ -17,6 +17,7 @@ import { useMetrics } from '../hooks/useMetrics';
 import { useOpportunities } from '../hooks/useOpportunities';
 import { usePipelineStatus } from '../hooks/usePipeline';
 import { formatRelativeTime } from '../lib/date';
+import { PLATFORM_COLORS } from '../lib/platforms';
 
 const EMPTY_OPPORTUNITIES = [];
 
@@ -85,13 +86,6 @@ function isApproved(o) {
 }
 
 // ─── Analytics Page ──────────────────────────────────────────────────────────
-
-const PLATFORM_COLORS = {
-  reddit: '#ff4500',
-  quora: '#b92b27',
-  medium: '#17c964',
-  unknown: '#6b7280',
-};
 
 function MetricCard({ label, value, sub, accent }) {
   return (

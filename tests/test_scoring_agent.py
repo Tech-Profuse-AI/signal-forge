@@ -390,6 +390,39 @@ def test_scoring_components():
     print("  -- Scoring Components PASSED --")
 
 
+def test_source_weighting_calibrates_platform_scores():
+    """Platform engagement and source quality use calibrated source weights."""
+    from agents.scoring_agent import OpportunityScoringAgent
+
+    agent = OpportunityScoringAgent()
+
+    base = {
+        "id": "source_weight",
+        "title": "Need workflow automation recommendations",
+        "body": "We are doing this manually and need a better workflow.",
+        "source_score": 80,
+        "opportunity_signals": ["recommendation_request", "bottleneck"],
+        "intent": "buying_intent",
+        "confidence": 90,
+        "url_valid": True,
+        "author": "Ada",
+    }
+
+    reddit = agent.score({**base, "platform": "reddit", "subreddit": "SaaS"})
+    quora = agent.score({**base, "platform": "quora", "topic": "Automation"})
+
+    reddit_bd = reddit["scoring_breakdown"]
+    quora_bd = quora["scoring_breakdown"]
+
+    assert "source_quality_boost" in reddit_bd
+    assert "source_quality_boost" in quora_bd
+    assert quora_bd["engagement_score"] > reddit_bd["engagement_score"]
+    assert reddit_bd["source_quality_boost"] > 0
+
+    same_confidence = agent.score({**base, "platform": "reddit", "confidence": 0.9})
+    assert same_confidence["scoring_breakdown"]["intent_score"] == reddit_bd["intent_score"]
+
+
 def test_stats_and_reset():
     """Stats tracking and reset work correctly."""
     from agents.scoring_agent import OpportunityScoringAgent

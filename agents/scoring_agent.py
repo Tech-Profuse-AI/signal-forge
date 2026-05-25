@@ -2,13 +2,14 @@
 SignalForge OpportunityScoringAgent -- Phase 4.
 
 Prioritises classified opportunities by business value using a
-weighted scoring formula across four dimensions:
+weighted scoring formula across calibrated dimensions:
 
   1. Intent weight     -- how valuable is this intent type?
   2. Confidence mult   -- how confident was the LLM classification?
-  3. Engagement weight  -- Reddit score (community validation)
+  3. Engagement weight  -- platform-normalised community validation
   4. Signal boost      -- bonus for high-value opportunity signals
   5. Urgency boost     -- bonus for urgency language
+  6. Source quality     -- platform/source credibility calibration
 
 Priority labels (based on final score 0-100):
   hot    -- 80+
@@ -50,9 +51,21 @@ class ScoringConfig:
     confidence_min_mult: float = 0.4
     confidence_max_mult: float = 1.0
 
-    # 3. Engagement weight -- Reddit score mapped to 0-20 points
+    # 3. Engagement weight -- platform score mapped to bounded points
     engagement_max_points: float = 20.0
     engagement_score_cap: int = 300  # scores above this get max points
+    engagement_platform_caps: Dict[str, int] = field(default_factory=lambda: {
+        "reddit": 300,
+        "quora": 80,
+        "medium": 100,
+        "unknown": 100,
+    })
+    engagement_platform_max_points: Dict[str, float] = field(default_factory=lambda: {
+        "reddit": 20.0,
+        "quora": 16.0,
+        "medium": 14.0,
+        "unknown": 12.0,
+    })
 
     # 4. Signal boost -- each matching signal adds points (max 20)
     signal_boost_values: Dict[str, float] = field(default_factory=lambda: {
@@ -73,6 +86,15 @@ class ScoringConfig:
 
     # 6. Knowledge fit -- deterministic scanner-side match to company capabilities
     knowledge_fit_max_points: float = 12.0
+
+    # 7. Source quality -- calibrate platform/source reliability and richness
+    source_quality_max_points: float = 8.0
+    source_platform_weights: Dict[str, float] = field(default_factory=lambda: {
+        "reddit": 1.0,
+        "quora": 0.9,
+        "medium": 0.82,
+        "unknown": 0.55,
+    })
 
     # Priority label thresholds
     hot_threshold: float = 80.0
@@ -188,7 +210,11 @@ class OpportunityScoringAgent:
         """Compute individual scoring components."""
         intent = opp.get("intent", "ignore")
         confidence = float(opp.get("confidence", 0.0))
-        reddit_score = int(opp.get("source_score", opp.get("score", 0)))
+        if confidence > 1.0:
+            confidence = confidence / 100.0
+        confidence = max(0.0, min(1.0, confidence))
+        platform = str(opp.get("platform", "unknown") or "unknown").lower()
+        source_score = self._to_int(opp.get("source_score", opp.get("score", 0)))
         signals = opp.get("opportunity_signals") or opp.get("signals", [])
         title = opp.get("title", "")
         body = opp.get("body", "")
@@ -202,7 +228,7 @@ class OpportunityScoringAgent:
         intent_score = base_weight * conf_mult
 
         # 3. Engagement weight
-        engagement = self._compute_engagement(reddit_score)
+        engagement = self._compute_engagement(source_score, platform)
 
         # 4. Signal boost
         signal_boost = self._compute_signal_boost(signals)
@@ -213,21 +239,33 @@ class OpportunityScoringAgent:
         # 6. Knowledge-aware product fit boost
         knowledge_fit = self._compute_knowledge_fit(opp)
 
+        # 7. Source/platform quality calibration
+        source_quality = self._compute_source_quality(opp, platform)
+
         return {
             "intent_score": intent_score,
             "engagement_score": engagement,
             "signal_boost": signal_boost,
             "urgency_boost": urgency,
             "knowledge_fit_boost": knowledge_fit,
+            "source_quality_boost": source_quality,
         }
 
-    def _compute_engagement(self, reddit_score: int) -> float:
-        """Map Reddit score to engagement points (0 to max)."""
-        if reddit_score <= 0:
+    def _compute_engagement(self, source_score: int, platform: str = "reddit") -> float:
+        """Map platform-specific source score to engagement points."""
+        if source_score <= 0:
             return 0.0
-        cap = self.config.engagement_score_cap
-        ratio = min(reddit_score / cap, 1.0)
-        return ratio * self.config.engagement_max_points
+        platform_key = str(platform or "unknown").lower()
+        cap = self.config.engagement_platform_caps.get(
+            platform_key,
+            self.config.engagement_score_cap,
+        )
+        max_points = self.config.engagement_platform_max_points.get(
+            platform_key,
+            self.config.engagement_max_points,
+        )
+        ratio = min(source_score / max(cap, 1), 1.0)
+        return ratio * max_points
 
     def _compute_signal_boost(self, signals: List[str]) -> float:
         """Sum boost values for matching signals, capped."""
@@ -256,6 +294,54 @@ class OpportunityScoringAgent:
             fit_score = max(fit_score, min(1.0, 0.18 * len(matches)))
 
         return max(0.0, min(1.0, fit_score)) * self.config.knowledge_fit_max_points
+
+    def _compute_source_quality(self, opportunity: Dict[str, Any], platform: str) -> float:
+        """Reward sources that are reliable, identifiable, and content-rich."""
+        platform_key = str(platform or "unknown").lower()
+        quality = self.config.source_platform_weights.get(
+            platform_key,
+            self.config.source_platform_weights.get("unknown", 0.55),
+        )
+
+        if opportunity.get("url_valid", True) is False:
+            quality -= 0.3
+
+        if self._has_source_context(opportunity):
+            quality += 0.08
+
+        author = str(opportunity.get("author", "") or "").strip().lower()
+        if author and author not in {"[unknown]", "unknown", "unknown author", "[deleted]"}:
+            quality += 0.04
+
+        body_len = len(str(opportunity.get("body", "") or "").strip())
+        if body_len >= 500:
+            quality += 0.06
+        elif body_len < 80:
+            quality -= 0.06
+
+        try:
+            relevance = float(opportunity.get("semantic_relevance_score", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            relevance = 0.0
+        if relevance > 0:
+            quality += min(0.12, relevance * 0.12)
+
+        return max(0.0, min(1.0, quality)) * self.config.source_quality_max_points
+
+    @staticmethod
+    def _has_source_context(opportunity: Dict[str, Any]) -> bool:
+        for key in ("source", "subreddit", "topic", "community", "channel"):
+            if str(opportunity.get(key, "") or "").strip():
+                return True
+        tags = opportunity.get("tags", [])
+        return isinstance(tags, list) and bool(tags)
+
+    @staticmethod
+    def _to_int(value: Any, fallback: int = 0) -> int:
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return fallback
 
     # -- Label & action mapping --------------------------------------------
 

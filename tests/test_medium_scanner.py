@@ -168,6 +168,39 @@ def test_rss_parser_dry_run():
     print("  ── RSS Parser Dry-Run tests PASSED ──")
 
 
+def test_entry_extraction_cleans_medium_content_and_author():
+    """Medium RSS extraction keeps rich content and normalises author strings."""
+    from providers.medium_provider import MediumProvider
+
+    class Tag:
+        term = "automation"
+
+    class Entry:
+        id = "https://medium.com/p/abc123def456"
+        title = "HTML heavy article"
+        link = ""
+        author = "writer@example.com (Jane Builder)"
+        summary = "<p>Short summary.</p>"
+        published = "Mon, 01 Jan 2024 12:00:00 GMT"
+        tags = [Tag()]
+        links = [{"rel": "alternate", "href": "https://medium.com/@jane/html-heavy-abc123def456"}]
+        content = [{
+            "value": (
+                "<h1>Title</h1><p>First&nbsp;paragraph about manual workflows.</p>"
+                "<script>ignore()</script><p>Second paragraph with automation.</p>"
+            )
+        }]
+
+    raw = MediumProvider._entry_to_raw(Entry())
+
+    assert raw["author"] == "Jane Builder"
+    assert raw["url"] == "https://medium.com/@jane/html-heavy-abc123def456"
+    assert "First paragraph" in raw["body"]
+    assert "Second paragraph" in raw["body"]
+    assert "ignore" not in raw["body"]
+    assert "<" not in raw["body"]
+
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 4. Normalisation
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

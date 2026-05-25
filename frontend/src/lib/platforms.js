@@ -31,6 +31,18 @@ export const PLATFORM_META = {
   },
 };
 
+export const PLATFORM_ORDER = ['reddit', 'quora', 'medium'];
+
+export const PLATFORM_COLORS = Object.fromEntries(
+  Object.entries(PLATFORM_META).map(([key, value]) => [key, value.accent]),
+);
+
+export const PLATFORM_BADGES = PLATFORM_ORDER.map((platform) => ({
+  platform,
+  label: PLATFORM_META[platform].label,
+  color: PLATFORM_META[platform].accent,
+}));
+
 export function getPlatformMeta(platform) {
   return PLATFORM_META[String(platform || '').toLowerCase()] || PLATFORM_META.unknown;
 }

@@ -38,6 +38,11 @@ _REDDIT_SUBREDDIT_RSS_URL = (
     "https://www.reddit.com/r/{subreddit}/search.rss"
     "?q={query}&restrict_sr=on&sort=relevance&t={time_filter}&limit={limit}"
 )
+_REDDIT_ALLOWED_TIME_FILTERS = {"hour", "day", "week", "month", "year", "all"}
+_REDDIT_REQUEST_HEADERS = {
+    "User-Agent": "SignalForge/1.0 RSS reader",
+    "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+}
 
 
 class RedditRSSProvider:
@@ -148,56 +153,113 @@ class RedditRSSProvider:
     ) -> List[Dict[str, Any]]:
         import feedparser
 
-        if subreddit:
-            feed_url = _REDDIT_SUBREDDIT_RSS_URL.format(
-                subreddit=quote_plus(subreddit),
-                query=quote_plus(query),
-                time_filter=quote_plus(time_filter or "week"),
-                limit=limit,
-            )
-        else:
-            feed_url = _REDDIT_RSS_URL.format(
-                query=quote_plus(query),
-                time_filter=quote_plus(time_filter or "week"),
-                limit=limit,
-            )
-        logger.info("Fetching Reddit RSS - url=%s limit=%d", feed_url, limit)
-
-        try:
-            feed = feedparser.parse(feed_url)
-        except Exception as exc:
-            logger.error("feedparser failed for '%s': %s", feed_url, exc)
-            return []
-
-        if feed.bozo and not feed.entries:
-            logger.warning(
-                "feedparser bozo error for '%s': %s", feed_url, feed.bozo_exception
-            )
-            return []
-
         posts: List[Dict[str, Any]] = []
-        skipped = 0
-        skipped_at_parse = 0
-        for entry in feed.entries[:limit]:
-            raw = self._entry_to_raw(entry)
-            if raw is None:
-                skipped_at_parse += 1
-                continue
-            normalised = self.normalize(raw)
-            if normalised.get("url_valid", True):
-                posts.append(normalised)
-            else:
-                skipped += 1
+        seen: set[str] = set()
+        for feed_url in self._candidate_feed_urls(
+            query=query,
+            limit=limit,
+            subreddit=subreddit,
+            time_filter=time_filter,
+        ):
+            logger.info("Fetching Reddit RSS - url=%s limit=%d", feed_url, limit)
 
-        if skipped_at_parse:
-            logger.info(
-                "Skipped %d non-post RSS entries at parse (t5_/entity IDs)",
-                skipped_at_parse,
-            )
-        if skipped:
-            logger.info("Skipped %d entries with invalid URLs", skipped)
+            try:
+                feed = feedparser.parse(
+                    feed_url,
+                    request_headers=_REDDIT_REQUEST_HEADERS,
+                )
+            except Exception as exc:
+                logger.error("feedparser failed for '%s': %s", feed_url, exc)
+                continue
+
+            if feed.bozo and not feed.entries:
+                logger.warning(
+                    "feedparser bozo error for '%s': %s", feed_url, feed.bozo_exception
+                )
+                continue
+
+            skipped = 0
+            skipped_at_parse = 0
+            for entry in feed.entries[:limit]:
+                raw = self._entry_to_raw(entry)
+                if raw is None:
+                    skipped_at_parse += 1
+                    continue
+                normalised = self.normalize(raw)
+                dedupe_key = normalised.get("url") or normalised.get("id")
+                if normalised.get("url_valid", True) and dedupe_key not in seen:
+                    posts.append(normalised)
+                    seen.add(dedupe_key)
+                elif not normalised.get("url_valid", True):
+                    skipped += 1
+
+            if skipped_at_parse:
+                logger.info(
+                    "Skipped %d non-post RSS entries at parse (t5_/entity IDs)",
+                    skipped_at_parse,
+                )
+            if skipped:
+                logger.info("Skipped %d entries with invalid URLs", skipped)
+
+            if posts:
+                break
+
         logger.info("Fetched %d Reddit RSS posts for query '%s'", len(posts), query)
         return posts
+
+    @staticmethod
+    def _candidate_feed_urls(
+        *,
+        query: str,
+        limit: int,
+        subreddit: Optional[str],
+        time_filter: str,
+    ) -> List[str]:
+        try:
+            clean_limit = max(1, min(int(limit), 100))
+        except (TypeError, ValueError):
+            clean_limit = 25
+        clean_time = str(time_filter or "week").lower()
+        if clean_time not in _REDDIT_ALLOWED_TIME_FILTERS:
+            clean_time = "week"
+
+        variants = [("relevance", clean_time)]
+        if clean_time != "all":
+            variants.append(("relevance", "all"))
+        variants.append(("new", clean_time))
+
+        urls: List[str] = []
+        for sort, time_window in variants:
+            if subreddit:
+                clean_subreddit = re.sub(
+                    r"^r/",
+                    "",
+                    str(subreddit).strip().strip("/"),
+                    flags=re.IGNORECASE,
+                )
+                url = (
+                    "https://www.reddit.com/r/{subreddit}/search.rss"
+                    "?q={query}&restrict_sr=on&sort={sort}&t={time_filter}&limit={limit}"
+                ).format(
+                    subreddit=quote_plus(clean_subreddit),
+                    query=quote_plus(query),
+                    sort=quote_plus(sort),
+                    time_filter=quote_plus(time_window),
+                    limit=clean_limit,
+                )
+            else:
+                url = (
+                    "https://www.reddit.com/search.rss"
+                    "?q={query}&sort={sort}&t={time_filter}&limit={limit}"
+                ).format(
+                    query=quote_plus(query),
+                    sort=quote_plus(sort),
+                    time_filter=quote_plus(time_window),
+                    limit=clean_limit,
+                )
+            if url not in urls:
+                urls.append(url)
+        return urls
 
     def _fetch_mock(self, query: str, limit: int) -> List[Dict[str, Any]]:
         posts = self._load_mock_data()

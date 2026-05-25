@@ -586,6 +586,40 @@ def test_crawl_disabled_without_key_uses_html_parser(monkeypatch):
     assert posts[0]["id"] == "qra_html_only"
 
 
+def test_crawl_target_limit_allows_three_pages():
+    """Live crawling should cover up to three valid results per query."""
+    from providers.quora_provider import QuoraProvider
+
+    assert QuoraProvider._crawl_target_limit(1) == 1
+    assert QuoraProvider._crawl_target_limit(3) == 3
+    assert QuoraProvider._crawl_target_limit(10) == 3
+
+
+def test_duckduckgo_search_extracts_wrapped_links(monkeypatch):
+    """DuckDuckGo fallback should unwrap result links before URL validation."""
+    from providers.quora_provider import QuoraProvider
+
+    class FakeResponse:
+        text = (
+            '<a class="result__a" href="/l/?uddg='
+            'https%3A%2F%2Fwww.quora.com%2FHow-do-I-build-a-workflow'
+            '&rut=abc">result</a>'
+        )
+
+        def raise_for_status(self):
+            return None
+
+    provider = QuoraProvider(mock_mode=False, request_delay=0.0)
+
+    import requests
+
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: FakeResponse())
+
+    urls = provider._duckduckgo_search("workflow", limit=5)
+
+    assert urls == ["https://www.quora.com/How-do-I-build-a-workflow"]
+
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Runner
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

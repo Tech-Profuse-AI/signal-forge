@@ -25,6 +25,7 @@ Schema:
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import logging
 import re
@@ -44,6 +45,26 @@ _FALLBACK_MOCK_DATA_PATH = (
 )
 
 _MEDIUM_RSS_URL = "https://medium.com/feed/tag/{query}"
+
+
+def _clean_html_text(value: str) -> str:
+    """Convert RSS HTML/content fragments into compact plain text."""
+    text = html.unescape(str(value or ""))
+    text = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", text)
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</(?:p|div|li|h[1-6]|blockquote|pre)>", "\n", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _clean_author(value: str) -> str:
+    """Normalise Medium RSS author strings such as 'email (Name)'."""
+    text = html.unescape(str(value or "")).strip()
+    match = re.search(r"\(([^)]+)\)", text)
+    if match:
+        text = match.group(1).strip()
+    return re.sub(r"\s+", " ", text).strip()
 
 
 class MediumProvider:
@@ -163,7 +184,9 @@ class MediumProvider:
     def _fetch_live(self, query: str, limit: int) -> List[Dict[str, Any]]:
         import feedparser
 
-        tag = query.lower().replace(" ", "-")
+        tag = re.sub(r"[^a-z0-9-]+", "-", query.lower().replace(" ", "-")).strip("-")
+        if not tag:
+            tag = "automation"
         feed_url = _MEDIUM_RSS_URL.format(query=tag)
 
         logger.info("Fetching Medium RSS — url=%s limit=%d", feed_url, limit)
@@ -259,37 +282,45 @@ class MediumProvider:
             if term:
                 tags.append(term)
 
-        # Content / summary
-        body = ""
+        content_values: List[str] = []
         if hasattr(entry, "content") and entry.content:
-            first_content = entry.content[0]
-            if isinstance(first_content, dict):
-                body = first_content.get("value", "") or ""
-            else:
-                body = getattr(first_content, "value", "") or ""
-        if not body:
-            body = getattr(entry, "summary", "") or ""
-
-        # Strip HTML tags from body
-        body = re.sub(r"<[^>]+>", " ", body)
-        body = re.sub(r"\s+", " ", body).strip()
+            for content_item in entry.content:
+                if isinstance(content_item, dict):
+                    content_values.append(content_item.get("value", "") or "")
+                else:
+                    content_values.append(getattr(content_item, "value", "") or "")
+        summary = getattr(entry, "summary", "") or ""
+        body = _clean_html_text(max([*content_values, summary], key=len, default=""))
 
         # Author
         author = ""
         if hasattr(entry, "author"):
-            author = entry.author or ""
+            author = _clean_author(entry.author or "")
         if not author and hasattr(entry, "author_detail"):
-            author = getattr(entry.author_detail, "name", "") or ""
+            author = _clean_author(getattr(entry.author_detail, "name", "") or "")
 
         # Published
         published_at = ""
         if hasattr(entry, "published"):
             published_at = entry.published or ""
 
+        link = getattr(entry, "link", "") or ""
+        for link_obj in getattr(entry, "links", []) or []:
+            if isinstance(link_obj, dict):
+                href = link_obj.get("href", "")
+                rel = link_obj.get("rel", "")
+            else:
+                href = getattr(link_obj, "href", "")
+                rel = getattr(link_obj, "rel", "")
+            if href and (rel == "alternate" or not link):
+                link = href
+                if rel == "alternate":
+                    break
+
         return {
-            "id": getattr(entry, "id", "") or getattr(entry, "link", ""),
+            "id": getattr(entry, "id", "") or link,
             "title": getattr(entry, "title", ""),
-            "url": getattr(entry, "link", ""),
+            "url": link,
             "author": author,
             "body": body,
             "tags": tags,
@@ -314,23 +345,30 @@ class MediumProvider:
     def _extract_author(post: Dict[str, Any]) -> str:
         author = post.get("author", "")
         if isinstance(author, str) and author.strip():
-            return author.strip()
+            return _clean_author(author)
         return "Unknown Author"
 
     @staticmethod
     def _extract_body(post: Dict[str, Any]) -> str:
         body = post.get("body") or post.get("summary") or post.get("content", "")
         if isinstance(body, str):
-            # Strip any residual HTML
-            body = re.sub(r"<[^>]+>", " ", body)
-            body = re.sub(r"\s+", " ", body).strip()
+            body = _clean_html_text(body)
         return body or ""
 
     @staticmethod
     def _extract_tags(post: Dict[str, Any]) -> List[str]:
         tags = post.get("tags", [])
         if isinstance(tags, list):
-            return [str(t).strip() for t in tags if t]
+            cleaned = [str(t).strip() for t in tags if t]
+            if cleaned:
+                return cleaned
+        if isinstance(tags, str):
+            cleaned = [item.strip() for item in tags.split(",") if item.strip()]
+            if cleaned:
+                return cleaned
+        categories = post.get("categories", [])
+        if isinstance(categories, list):
+            return [str(t).strip() for t in categories if t]
         return []
 
     @staticmethod
@@ -411,7 +449,10 @@ class MediumProvider:
             post.get("body", ""),
             " ".join(post.get("tags", [])),
         ]).lower()
-        return query in text
+        if query in text:
+            return True
+        terms = [term for term in re.split(r"\s+", query) if len(term) > 2]
+        return bool(terms) and any(term in text for term in terms)
 
     def __repr__(self) -> str:
         return f"<MediumProvider mode='{self._mode}'>"

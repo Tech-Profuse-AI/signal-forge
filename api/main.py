@@ -11,6 +11,7 @@ from __future__ import annotations
 import sys
 import json
 import logging
+import os
 import threading
 from collections import deque
 from datetime import datetime, timezone
@@ -36,6 +37,26 @@ from api.serializers import (                       # noqa: E402
 
 logger = logging.getLogger("signalforge.api")
 
+
+def _cors_allowed_origins() -> List[str]:
+    values: List[str] = []
+    raw_allowed = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    frontend_url = os.getenv("FRONTEND_URL", "")
+
+    for raw in (raw_allowed, frontend_url):
+        for origin in raw.split(","):
+            cleaned = origin.strip().rstrip("/")
+            if cleaned and cleaned not in values:
+                values.append(cleaned)
+
+    if not values:
+        logger.warning(
+            "CORS_ALLOWED_ORIGINS/FRONTEND_URL not set; allowing all origins."
+        )
+        return ["*"]
+
+    return values
+
 # ======================================================================
 # App + CORS
 # ======================================================================
@@ -48,7 +69,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
