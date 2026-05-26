@@ -34,3 +34,15 @@ logs/
 # Cache
 cache/
 *.pkl
+
+.history/
+
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+*.env
+
+.benchmarks/
+test_output.txt
