@@ -46,3 +46,6 @@ cache/
 
 .benchmarks/
 test_output.txt
+
+.pytest_cache/
+__pycache__/
