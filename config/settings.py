@@ -15,6 +15,30 @@ from dotenv import load_dotenv
 logger = logging.getLogger("signalforge.config")
 
 
+def _env_int(name: str, default: int, *, minimum: int = 0) -> int:
+    raw = os.getenv(name, str(default))
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        logger.warning(
+            "Invalid integer for %s=%r; using default %d",
+            name,
+            raw,
+            default,
+        )
+        return default
+    if value < minimum:
+        logger.warning(
+            "Invalid integer for %s=%r; minimum is %d; using default %d",
+            name,
+            raw,
+            minimum,
+            default,
+        )
+        return default
+    return value
+
+
 class Settings:
     """
     Singleton-style settings loader.
@@ -51,6 +75,7 @@ class Settings:
             logger.info("Loaded environment from %s", env_path)
 
         # ── LLM Provider ──────────────────────────────────────────────
+        self.environment: str = os.getenv("ENVIRONMENT", "production").lower()
         self.llm_provider: str = os.getenv("LLM_PROVIDER", "gemini").lower()
         self.gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
         self.openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
@@ -84,6 +109,10 @@ class Settings:
 
         # Scanner data-quality controls
         self.cache_max_age_days: int = int(os.getenv("CACHE_MAX_AGE_DAYS", "7"))
+        self.scanner_cache_max_age_minutes: int = _env_int(
+            "SCANNER_CACHE_MAX_AGE_MINUTES",
+            10,
+        )
         self.clear_cache_on_boot: bool = (
             os.getenv("CLEAR_CACHE_ON_BOOT", "false").lower()
             in {"1", "true", "yes", "on"}
@@ -92,6 +121,16 @@ class Settings:
             os.getenv("TEST_MODE", "false").lower()
             in {"1", "true", "yes", "on"}
         )
+
+        # ── Scan Limits (demo-safe defaults to prevent Gemini 429) ────
+        self.max_reddit_posts: int = _env_int("MAX_REDDIT_POSTS", 3)
+        self.max_quora_posts: int = _env_int("MAX_QUORA_POSTS", 2)
+        self.max_medium_posts: int = _env_int("MAX_MEDIUM_POSTS", 2)
+        self.max_target_subreddit_posts: int = _env_int(
+            "MAX_TARGET_SUBREDDIT_POSTS",
+            3,
+        )
+        self.max_total_scan_items: int = _env_int("MAX_TOTAL_SCAN_ITEMS", 10)
 
         self._initialized = True
         logger.info(

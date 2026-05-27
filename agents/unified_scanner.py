@@ -133,6 +133,14 @@ class UnifiedScannerAgent:
 
         before_exact = len(unified_results)
         unified_results = dedupe_unified_exact(unified_results, logger=logger)
+        total_cap = self._scan_limits()["total"]
+        if total_cap >= 0 and len(unified_results) > total_cap:
+            logger.info(
+                "Early scan cap reached: platform=all cap=%d collected=%d",
+                total_cap,
+                total_cap,
+            )
+            unified_results = unified_results[:total_cap]
         logger.info(
             "Unified exact dedup stage: input=%d kept=%d removed=%d",
             before_exact,
@@ -150,13 +158,26 @@ class UnifiedScannerAgent:
         time_filter: str = "week",
     ) -> Iterator[Dict[str, Any]]:
         """Yield each platform's completed scan batch as soon as it finishes."""
+        # ── Read scan limits from Settings (demo-safe defaults) ──────
+        limits = self._scan_limits()
+        platform_caps = self._budget_platform_caps(limits)
+
+        logger.info(
+            "Scan limits: reddit=%d, quora=%d, medium=%d, target_subreddit=%d, total=%d",
+            platform_caps["reddit"],
+            platform_caps["quora"],
+            platform_caps["medium"],
+            limits["target_subreddit"],
+            limits["total"],
+        )
+
         raw_queries = self._raw_queries(keywords)
         original_intent = " ".join(raw_queries).strip()
         query_plan = {
             platform: platform_query_candidates(
                 raw_queries,
                 platform=platform,
-                max_queries=4,
+                max_queries=max(1, min(4, platform_caps[platform] or 1)),
             )
             for platform in ("reddit", "quora", "medium")
         }
@@ -169,27 +190,55 @@ class UnifiedScannerAgent:
             started = time.perf_counter()
             platform_keywords = [candidate.text for candidate in query_plan[platform]]
             results: List[Dict[str, Any]]
+            platform_cap = platform_caps[platform]
             try:
+                if platform_cap <= 0:
+                    logger.info(
+                        "Early scan cap reached: platform=%s cap=%d",
+                        platform,
+                        platform_cap,
+                    )
+                    return [], (time.perf_counter() - started) * 1000.0
                 if platform == "reddit":
+                    effective_limit = min(limit_per_keyword, platform_cap)
                     results = self.reddit_scanner.scan(
                         keywords=platform_keywords,
-                        limit_per_keyword=limit_per_keyword,
+                        limit_per_keyword=effective_limit,
                         subreddit=subreddit,
                         time_filter=time_filter,
                         original_intent=original_intent,
+                        max_posts=platform_cap,
                     )
                 elif platform == "quora":
+                    effective_limit = min(limit_per_keyword, platform_cap)
                     results = self.quora_scanner.scan(
                         keywords=platform_keywords,
-                        limit_per_keyword=min(limit_per_keyword, 6),
+                        limit_per_keyword=effective_limit,
                         original_intent=original_intent,
+                        max_posts=platform_cap,
                     )
                 else:
+                    effective_limit = min(limit_per_keyword, platform_cap)
                     results = self.medium_scanner.scan(
                         keywords=platform_keywords,
-                        limit_per_keyword=min(limit_per_keyword, 8),
+                        limit_per_keyword=effective_limit,
                         original_intent=original_intent,
+                        max_posts=platform_cap,
                     )
+                if len(results) > platform_cap:
+                    logger.info(
+                        "Early scan cap reached: platform=%s cap=%d collected=%d",
+                        platform,
+                        platform_cap,
+                        platform_cap,
+                    )
+                    results = results[:platform_cap]
+                logger.info(
+                    "Platform %s scan complete: %d results (limit=%d)",
+                    platform,
+                    len(results),
+                    platform_cap,
+                )
                 return results, (time.perf_counter() - started) * 1000.0
             finally:
                 elapsed_ms = (time.perf_counter() - started) * 1000.0
@@ -199,7 +248,7 @@ class UnifiedScannerAgent:
                     elapsed_ms,
                 )
 
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        with ThreadPoolExecutor(max_workers=1) as pool:
             futures = {
                 pool.submit(scan_platform, platform): platform
                 for platform in ("reddit", "quora", "medium")
@@ -222,6 +271,38 @@ class UnifiedScannerAgent:
                         "error": str(exc),
                         "elapsed_ms": None,
                     }
+
+    @staticmethod
+    def _scan_limits() -> Dict[str, int]:
+        try:
+            from config.settings import Settings
+
+            settings = Settings()
+            return {
+                "reddit": max(0, int(settings.max_reddit_posts)),
+                "quora": max(0, int(settings.max_quora_posts)),
+                "medium": max(0, int(settings.max_medium_posts)),
+                "target_subreddit": max(0, int(settings.max_target_subreddit_posts)),
+                "total": max(0, int(settings.max_total_scan_items)),
+            }
+        except Exception:
+            return {
+                "reddit": 3,
+                "quora": 2,
+                "medium": 2,
+                "target_subreddit": 3,
+                "total": 10,
+            }
+
+    @staticmethod
+    def _budget_platform_caps(limits: Dict[str, int]) -> Dict[str, int]:
+        remaining = max(0, int(limits.get("total", 10)))
+        caps: Dict[str, int] = {}
+        for platform in ("reddit", "quora", "medium"):
+            cap = min(max(0, int(limits.get(platform, 0))), remaining)
+            caps[platform] = cap
+            remaining -= cap
+        return caps
 
     @staticmethod
     def _raw_queries(keywords: Optional[List[str]] | str) -> List[str]:

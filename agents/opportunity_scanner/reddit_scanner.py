@@ -69,6 +69,7 @@ class RedditScanner:
         limit_per_keyword: int = 25,
         subreddit: Optional[str] = None,
         time_filter: str = "week",
+        max_posts: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Scan Reddit for posts matching the given keywords.
@@ -76,8 +77,14 @@ class RedditScanner:
         Returns a flat, normalised list of post dicts.
         """
         if self._mode == "mock":
-            return self._scan_mock(keywords)
-        return self._scan_live(keywords, limit_per_keyword, subreddit, time_filter)
+            return self._scan_mock(keywords, max_posts=max_posts)
+        return self._scan_live(
+            keywords,
+            limit_per_keyword,
+            subreddit,
+            time_filter,
+            max_posts=max_posts,
+        )
 
     # ── Live scanning ─────────────────────────────────────────────────
 
@@ -87,16 +94,28 @@ class RedditScanner:
         limit: int,
         subreddit: Optional[str],
         time_filter: str,
+        *,
+        max_posts: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         all_posts: List[Dict[str, Any]] = []
         for kw in keywords:
+            remaining = self._remaining_capacity(max_posts, len(all_posts))
+            if remaining is not None and remaining <= 0:
+                logger.info(
+                    "Early scan cap reached: platform=reddit cap=%d",
+                    max_posts,
+                )
+                break
+            request_limit = min(limit, remaining) if remaining is not None else limit
             try:
                 posts = self._fetch_provider_posts(
                     keyword=kw,
-                    limit=limit,
+                    limit=request_limit,
                     subreddit=subreddit,
                     time_filter=time_filter,
                 )
+                if remaining is not None:
+                    posts = posts[:remaining]
                 all_posts.extend(posts)
                 logger.info("Live scan: keyword='%s' -> %d posts", kw, len(posts))
             except Exception as exc:
@@ -148,11 +167,17 @@ class RedditScanner:
         return self._provider.fetch_posts(**kwargs)
 
     def _scan_mock(
-        self, keywords: List[str]
+        self,
+        keywords: List[str],
+        *,
+        max_posts: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         posts = self._load_mock_data()
+        if max_posts is not None and max_posts <= 0:
+            logger.info("Early scan cap reached: platform=reddit cap=%d", max_posts)
+            return []
         if not keywords:
-            return posts
+            return self._cap_posts(posts, max_posts)
 
         # Filter mock posts by keyword presence in title + body
         matched: List[Dict[str, Any]] = []
@@ -168,7 +193,29 @@ class RedditScanner:
             "Mock scan: keywords=%s -> %d/%d posts matched",
             keywords, len(matched), len(posts),
         )
-        return matched
+        return self._cap_posts(matched, max_posts)
+
+    @staticmethod
+    def _remaining_capacity(max_posts: Optional[int], current_count: int) -> Optional[int]:
+        if max_posts is None:
+            return None
+        return max(0, max_posts - current_count)
+
+    @staticmethod
+    def _cap_posts(
+        posts: List[Dict[str, Any]],
+        max_posts: Optional[int],
+    ) -> List[Dict[str, Any]]:
+        if max_posts is None:
+            return posts
+        capped = posts[:max_posts]
+        if len(posts) > len(capped):
+            logger.info(
+                "Early scan cap reached: platform=reddit cap=%d collected=%d",
+                max_posts,
+                len(capped),
+            )
+        return capped
 
     @staticmethod
     def _keyword_matches_text(keyword: str, text: str) -> bool:

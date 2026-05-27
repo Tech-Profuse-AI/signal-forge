@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import logging
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from agents.opportunity_scanner.cache_manager import CacheManager
@@ -171,6 +170,7 @@ class QuoraScannerAgent:
         keywords: Optional[List[str]] = None,
         limit_per_keyword: int = 10,
         original_intent: Optional[str] = None,
+        max_posts: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Run the full pipeline: fetch → normalise → deduplicate → filter → signal.
@@ -188,9 +188,13 @@ class QuoraScannerAgent:
         if kw != raw_kw:
             logger.info("Quora intent query extraction: raw=%s semantic=%s", raw_kw, kw)
         logger.info("QuoraScannerAgent.scan() - keywords=%s", kw)
+        scan_cap = self._effective_scan_cap(limit_per_keyword, max_posts)
+        if scan_cap <= 0:
+            logger.info("Early scan cap reached: platform=quora cap=%d", scan_cap)
+            return []
 
         # 1. Fetch
-        raw_posts = self._fetch_all(kw, limit_per_keyword)
+        raw_posts = self._fetch_all(kw, scan_cap)
         self.stats["fetched"] += len(raw_posts)
         logger.info("Raw Quora posts fetched: %d", len(raw_posts))
 
@@ -319,23 +323,51 @@ class QuoraScannerAgent:
         """Fetch posts for every keyword and merge results."""
         all_posts: List[Dict[str, Any]] = []
 
-        def fetch_keyword(kw: str) -> List[Dict[str, Any]]:
-            return self._provider.fetch_posts(query=kw, limit=min(limit, 3))
-
-        with ThreadPoolExecutor(max_workers=3) as pool:
-            futures = {pool.submit(fetch_keyword, kw): kw for kw in keywords}
-            for future in as_completed(futures):
-                kw = futures[future]
-                if len(all_posts) >= max(4, min(limit, 6)):
-                    continue
-                try:
-                    posts = future.result()
-                    all_posts.extend(posts)
-                    logger.info("Fetched %d posts for query '%s'", len(posts), kw)
-                except Exception as exc:
-                    logger.error("Fetch failed for '%s': %s", kw, exc)
+        for kw in keywords:
+            remaining = limit - len(all_posts)
+            if remaining <= 0:
+                logger.info(
+                    "Early scan cap reached: platform=quora cap=%d collected=%d",
+                    limit,
+                    len(all_posts),
+                )
+                break
+            try:
+                posts = self._provider.fetch_posts(query=kw, limit=remaining)
+                posts = posts[:remaining]
+                all_posts.extend(posts)
+                logger.info("Fetched %d posts for query '%s'", len(posts), kw)
+            except Exception as exc:
+                logger.error("Fetch failed for '%s': %s", kw, exc)
+            if len(all_posts) >= limit:
+                logger.info(
+                    "Early scan cap reached: platform=quora cap=%d collected=%d",
+                    limit,
+                    len(all_posts),
+                )
+                break
 
         return all_posts
+
+    @staticmethod
+    def _effective_scan_cap(
+        limit_per_keyword: int,
+        requested_max_posts: Optional[int],
+    ) -> int:
+        try:
+            limit = int(limit_per_keyword)
+        except (TypeError, ValueError):
+            limit = 10
+        caps = [max(0, limit)]
+        if requested_max_posts is not None:
+            caps.append(max(0, int(requested_max_posts)))
+        try:
+            from config.settings import Settings
+
+            caps.append(max(0, int(Settings().max_quora_posts)))
+        except Exception:
+            caps.append(2)
+        return min(caps)
 
     def _normalise(
         self, posts: List[Dict[str, Any]]

@@ -34,6 +34,26 @@ def _env_int(names: tuple[str, ...], default: int) -> int:
     return default
 
 
+def _current_environment() -> str:
+    return os.environ.get("ENVIRONMENT", "").strip().lower()
+
+
+def _is_development_environment() -> bool:
+    return _current_environment() in {"development", "dev", "local"}
+
+
+def _format_age(seconds: int) -> str:
+    if seconds < 0:
+        return "never"
+    if seconds == 0:
+        return "0s"
+    if seconds % 86400 == 0:
+        return f"{seconds // 86400}d"
+    if seconds % 60 == 0:
+        return f"{seconds // 60}m"
+    return f"{seconds}s"
+
+
 class CacheManager:
     """Small JSON cache for exact post IDs and exact cleaned URLs."""
 
@@ -46,11 +66,7 @@ class CacheManager:
     ) -> None:
         env_ephemeral = _env_flag("TEST_MODE") or _env_flag("EPHEMERAL_SCAN_MODE")
         self._ephemeral = ephemeral or env_ephemeral
-        self._max_age_days = (
-            max_age_days
-            if max_age_days is not None
-            else _env_int(("CACHE_MAX_AGE_DAYS", "SCANNER_CACHE_MAX_AGE_DAYS"), 7)
-        )
+        self._max_age_seconds = self._resolve_max_age_seconds(max_age_days)
         self._cache_dir = Path(cache_dir) if cache_dir else _DEFAULT_CACHE_DIR
         self._cache_file = self._cache_dir / cache_filename
         self._cache: Dict[str, str] = {}
@@ -63,11 +79,12 @@ class CacheManager:
             self._cache = self._load()
 
         logger.info(
-            "CacheManager ready - %d seen keys, file=%s, ephemeral=%s, max_age_days=%d",
+            "CacheManager ready - %d seen keys, file=%s, ephemeral=%s, max_age=%s, environment=%s",
             len(self._cache),
             self._cache_file,
             self._ephemeral,
-            self._max_age_days,
+            _format_age(self._max_age_seconds),
+            _current_environment() or "production",
         )
 
     def has_seen(self, post_id: str) -> bool:
@@ -134,11 +151,32 @@ class CacheManager:
 
     @property
     def max_age_days(self) -> int:
-        return self._max_age_days
+        if self._max_age_seconds < 0:
+            return -1
+        return self._max_age_seconds // 86400
+
+    @property
+    def max_age_seconds(self) -> int:
+        return self._max_age_seconds
 
     @property
     def cache_file(self) -> Path:
         return self._cache_file
+
+    @staticmethod
+    def _resolve_max_age_seconds(max_age_days: Optional[int]) -> int:
+        if max_age_days is not None:
+            return max_age_days * 86400
+
+        if _is_development_environment():
+            minutes = _env_int(
+                ("SCANNER_CACHE_MAX_AGE_MINUTES", "CACHE_MAX_AGE_MINUTES"),
+                10,
+            )
+            return minutes * 60
+
+        days = _env_int(("CACHE_MAX_AGE_DAYS", "SCANNER_CACHE_MAX_AGE_DAYS"), 7)
+        return days * 86400
 
     def _load(self) -> Dict[str, str]:
         if not self._cache_file.exists():
@@ -172,7 +210,7 @@ class CacheManager:
             return {}
 
     def _is_expired(self, seen_at: str) -> bool:
-        if self._max_age_days < 0:
+        if self._max_age_seconds < 0:
             return False
         try:
             seen_dt = datetime.fromisoformat(seen_at)
@@ -182,7 +220,7 @@ class CacheManager:
             seen_dt = seen_dt.replace(tzinfo=timezone.utc)
         else:
             seen_dt = seen_dt.astimezone(timezone.utc)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=self._max_age_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=self._max_age_seconds)
         return seen_dt < cutoff
 
     def _save(self) -> None:

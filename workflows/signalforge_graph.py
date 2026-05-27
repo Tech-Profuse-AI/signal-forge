@@ -206,7 +206,7 @@ class SignalForgeGraph:
         subreddit: Optional[str] = None,
         time_filter: str = "week",
         progress_callback: Optional[Any] = None,
-        max_workers: int = 4,
+        max_workers: int = 1,
     ) -> None:
         self._scanner_agent = scanner_agent
         self._intent_agent = intent_agent
@@ -219,6 +219,7 @@ class SignalForgeGraph:
         self._time_filter = time_filter
         self._progress_callback = progress_callback
         self._max_workers = max(1, int(max_workers))
+        self._max_total_scan_items = self._load_total_scan_cap()
 
         builder = StateGraph(
             SignalForgeState,
@@ -275,7 +276,7 @@ class SignalForgeGraph:
         logger.info("progressive pipeline start")
         logger.info(
             "Concurrent execution plan: scanners=[reddit, quora, medium], "
-            "item_workers=%d, parallel_ops=[intent, scoring, drafting, compliance], "
+            "item_workers=%d, item_ops=sequential, "
             "knowledge=serialized",
             self._max_workers,
         )
@@ -288,6 +289,14 @@ class SignalForgeGraph:
         seen_keys: set[str] = set()
         futures = []
         knowledge_lock = threading.Lock()
+        item_counter = 0
+
+        logger.info(
+            "Progressive pipeline using max_workers=%d (sequential=%s) total_scan_cap=%d",
+            self._max_workers,
+            self._max_workers <= 1,
+            self._max_total_scan_items,
+        )
 
         with ThreadPoolExecutor(max_workers=self._max_workers) as pool:
             for batch in self._scan_batches(query, profiler):
@@ -302,11 +311,26 @@ class SignalForgeGraph:
 
                 batch_results = list(batch.get("results", []) or [])
                 for opportunity in self._dedupe_stream_batch(batch_results, seen_keys):
+                    if item_counter >= self._max_total_scan_items:
+                        logger.info(
+                            "Early scan cap reached: platform=all cap=%d collected=%d",
+                            self._max_total_scan_items,
+                            item_counter,
+                        )
+                        continue
+                    item_counter += 1
                     discovered_opportunity = {
                         **opportunity,
                         "pipeline_state": "discovered",
                     }
                     discovered.append(discovered_opportunity)
+                    logger.info(
+                        "Processing item %d/%d - platform=%s id=%s",
+                        item_counter,
+                        self._max_total_scan_items,
+                        platform,
+                        opportunity.get("id", "unknown"),
+                    )
                     self._emit_opportunity_state(
                         "discovered",
                         opportunity=discovered_opportunity,
@@ -679,6 +703,28 @@ class SignalForgeGraph:
             keys.add(f"url:{url}")
         return keys
 
+    @staticmethod
+    def _load_total_scan_cap() -> int:
+        try:
+            from config.settings import Settings
+
+            return max(0, int(Settings().max_total_scan_items))
+        except Exception:
+            return 10
+
+    def _cap_scan_items(
+        self,
+        opportunities: List[OpportunityPayload],
+    ) -> List[OpportunityPayload]:
+        if len(opportunities) <= self._max_total_scan_items:
+            return opportunities
+        logger.info(
+            "Early scan cap reached: platform=all cap=%d collected=%d",
+            self._max_total_scan_items,
+            self._max_total_scan_items,
+        )
+        return opportunities[:self._max_total_scan_items]
+
     def scanner_node(self, state: SignalForgeState) -> Dict[str, Any]:
         logger.info("scanner phase start")
         errors = list(state.get("errors", []))
@@ -698,6 +744,7 @@ class SignalForgeGraph:
             except (TypeError, ValueError):
                 pass
             opportunities = self._scanner_agent.scan(**scan_kwargs)
+            opportunities = self._cap_scan_items(opportunities)
         except Exception as exc:
             logger.exception("scanner phase failed")
             errors.append(self._build_error("scanner", None, exc))
@@ -732,7 +779,7 @@ class SignalForgeGraph:
                 err = self._build_error("intent", opportunity.get("id"), exc)
                 return self._intent_fallback(str(exc)), err
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=1) as pool:
             mapped = pool.map(process_opportunity, state["opportunities"])
 
         for res, err in mapped:
@@ -844,7 +891,7 @@ class SignalForgeGraph:
             state["knowledge_results"],
         )
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=1) as pool:
             mapped = pool.map(process_draft, items)
 
         for res, err in mapped:
@@ -1073,7 +1120,7 @@ def build_signalforge_graph(
     subreddit: Optional[str] = None,
     time_filter: str = "week",
     progress_callback: Optional[Any] = None,
-    max_workers: int = 4,
+    max_workers: int = 1,
 ) -> SignalForgeGraph:
     """Factory helper for creating the executable SignalForge graph."""
     return SignalForgeGraph(

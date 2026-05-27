@@ -151,6 +151,22 @@ class BadIntentLLMProvider(BaseLLMProvider):
         return "<BadIntentLLMProvider>"
 
 
+class IgnoreBiasedLLMProvider(BaseLLMProvider):
+    """Returns ignore for every prompt to exercise IntentAgent guardrails."""
+
+    def generate(self, prompt: str, **kwargs) -> str:
+        return json.dumps({
+            "intent": "ignore",
+            "confidence": 0.94,
+            "reasoning": "The post is only a discussion.",
+            "business_relevance": "none",
+            "recommended_action": "skip",
+        })
+
+    def __repr__(self) -> str:
+        return "<IgnoreBiasedLLMProvider>"
+
+
 # -- Test Opportunities ---------------------------------------------------
 
 MOCK_OPPORTUNITIES = [
@@ -360,6 +376,40 @@ def test_invalid_intent_fallback():
     print("  -- Invalid Intent Fallback PASSED --")
 
 
+def test_actionable_signals_relax_ignore():
+    """Pain-point and bottleneck posts should continue past ignore-biased LLMs."""
+    from agents.intent_agent import IntentAgent
+
+    print("\n" + "=" * 60)
+    print("  TEST: Actionable Signals Relax Ignore")
+    print("=" * 60)
+
+    opportunity = {
+        "id": "quora_manual_ops_001",
+        "platform": "quora",
+        "title": "Manual reporting workflow does not scale for our ops team",
+        "body": (
+            "We are stuck copying updates between tools every day. "
+            "The manual process takes too long and has become an operational bottleneck."
+        ),
+        "opportunity_signals": ["pain_point", "bottleneck", "help_request"],
+        "score": 0,
+    }
+
+    agent = IntentAgent(IgnoreBiasedLLMProvider())
+    result = agent.classify(opportunity)
+
+    assert result["intent"] in {"problem_intent", "churn_risk"}
+    assert result["intent"] != "ignore"
+    assert result["recommended_action"] == "respond"
+    assert result["confidence"] >= 0.76
+    print(
+        f"  + Ignore relaxed -> {result['intent']} "
+        f"({result['confidence']:.2f})"
+    )
+    print("  -- Actionable Signals Relax Ignore PASSED --")
+
+
 def test_type_validation():
     """IntentAgent rejects non-BaseLLMProvider inputs."""
     from agents.intent_agent import IntentAgent
@@ -457,6 +507,7 @@ if __name__ == "__main__":
         test_invalid_json_fallback()
         test_markdown_fence_stripping()
         test_invalid_intent_fallback()
+        test_actionable_signals_relax_ignore()
         test_type_validation()
         test_stats_reset()
         test_live_gemini()

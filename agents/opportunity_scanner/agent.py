@@ -13,7 +13,6 @@ Inspired by the TrendScannerAgent pattern in social-media-agents.
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Iterable, List, Optional
 
 from agents.opportunity_scanner.reddit_scanner import RedditScanner
@@ -148,6 +147,7 @@ class OpportunityScannerAgent:
         subreddit: Optional[str] = None,
         time_filter: str = "week",
         original_intent: Optional[str] = None,
+        max_posts: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Run the full pipeline: fetch → normalise → deduplicate → filter.
@@ -166,6 +166,11 @@ class OpportunityScannerAgent:
         if kw != raw_kw:
             logger.info("Reddit intent query extraction: raw=%s semantic=%s", raw_kw, kw)
         logger.info("Starting Reddit scan - keywords=%s", kw)
+        scan_cap = self._effective_scan_cap(limit_per_keyword, max_posts)
+        target_cap = self._target_subreddit_cap()
+        if scan_cap <= 0:
+            logger.info("Early scan cap reached: platform=reddit cap=%d", scan_cap)
+            return []
 
         # 1. Fetch
         raw_posts = self._fetch_reddit_posts(
@@ -173,6 +178,8 @@ class OpportunityScannerAgent:
             limit_per_keyword=limit_per_keyword,
             subreddit=subreddit,
             time_filter=time_filter,
+            max_posts=scan_cap,
+            max_target_subreddit_posts=target_cap,
         )
         self.stats["fetched"] += len(raw_posts)
         logger.info("Total Reddit posts fetched: %d", len(raw_posts))
@@ -273,42 +280,61 @@ class OpportunityScannerAgent:
         limit_per_keyword: int,
         subreddit: Optional[str],
         time_filter: str,
+        max_posts: int,
+        max_target_subreddit_posts: int,
     ) -> List[Dict[str, Any]]:
+        if max_posts <= 0:
+            logger.info("Early scan cap reached: platform=reddit cap=%d", max_posts)
+            return []
+
+        request_limit = max(1, min(limit_per_keyword, max_posts))
+
         if self.scanner.mode != "live":
             return self.scanner.scan_keywords(
                 keywords=keywords,
-                limit_per_keyword=limit_per_keyword,
+                limit_per_keyword=request_limit,
                 subreddit=subreddit,
                 time_filter=time_filter,
+                max_posts=max_posts,
             )
 
         if subreddit:
             return self.scanner.scan_keywords(
                 keywords=keywords,
-                limit_per_keyword=limit_per_keyword,
+                limit_per_keyword=request_limit,
                 subreddit=subreddit,
                 time_filter=time_filter,
+                max_posts=max_posts,
             )
 
         targeted = self._scan_targeted_subreddits(
             keywords=keywords,
-            limit_per_keyword=limit_per_keyword,
+            limit_per_keyword=request_limit,
             time_filter=time_filter,
+            max_posts=max_posts,
+            max_target_subreddit_posts=max_target_subreddit_posts,
         )
-        if len(targeted) >= max(4, min(limit_per_keyword, 10)):
+        if len(targeted) >= max_posts:
+            logger.info(
+                "Early scan cap reached: platform=reddit cap=%d collected=%d",
+                max_posts,
+                len(targeted),
+            )
             return targeted
 
         logger.info(
             "Targeted Reddit search returned %d posts; running global fallback",
             len(targeted),
         )
+        remaining = max_posts - len(targeted)
         global_posts = self.scanner.scan_keywords(
             keywords=keywords,
-            limit_per_keyword=max(3, min(limit_per_keyword, 8)),
+            limit_per_keyword=max(1, min(request_limit, remaining)),
             subreddit=None,
             time_filter=time_filter,
+            max_posts=remaining,
         )
-        return targeted + global_posts
+        return (targeted + global_posts)[:max_posts]
 
     def _scan_targeted_subreddits(
         self,
@@ -316,41 +342,87 @@ class OpportunityScannerAgent:
         keywords: List[str],
         limit_per_keyword: int,
         time_filter: str,
+        max_posts: int,
+        max_target_subreddit_posts: int,
     ) -> List[Dict[str, Any]]:
-        per_subreddit_limit = max(2, min(5, limit_per_keyword))
-        all_posts: List[Dict[str, Any]] = []
+        if max_posts <= 0:
+            logger.info("Early scan cap reached: platform=reddit cap=%d", max_posts)
+            return []
 
-        def fetch_target(subreddit: str) -> List[Dict[str, Any]]:
-            return self.scanner.scan_keywords(
-                keywords=keywords,
-                limit_per_keyword=per_subreddit_limit,
-                subreddit=subreddit,
-                time_filter=time_filter,
-            )
+        per_subreddit_limit = max(
+            1,
+            min(limit_per_keyword, max_target_subreddit_posts, max_posts),
+        )
+        all_posts: List[Dict[str, Any]] = []
 
         logger.info(
             "Reddit targeted subreddit search first: subreddits=%s",
             TARGET_SUBREDDITS,
         )
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            futures = {
-                pool.submit(fetch_target, target): target
-                for target in TARGET_SUBREDDITS
-            }
-            for future in as_completed(futures):
-                target = futures[future]
-                try:
-                    posts = future.result()
-                    all_posts.extend(posts)
-                    logger.info(
-                        "Targeted Reddit scan r/%s -> %d posts",
-                        target,
-                        len(posts),
-                    )
-                except Exception as exc:
-                    logger.warning("Targeted Reddit scan failed r/%s: %s", target, exc)
+        for target in TARGET_SUBREDDITS:
+            remaining = max_posts - len(all_posts)
+            if remaining <= 0:
+                logger.info(
+                    "Early scan cap reached: platform=reddit cap=%d collected=%d",
+                    max_posts,
+                    len(all_posts),
+                )
+                break
+            try:
+                posts = self.scanner.scan_keywords(
+                    keywords=keywords,
+                    limit_per_keyword=min(per_subreddit_limit, remaining),
+                    subreddit=target,
+                    time_filter=time_filter,
+                    max_posts=remaining,
+                )
+                posts = posts[:remaining]
+                all_posts.extend(posts)
+                logger.info(
+                    "Targeted Reddit scan r/%s -> %d posts",
+                    target,
+                    len(posts),
+                )
+            except Exception as exc:
+                logger.warning("Targeted Reddit scan failed r/%s: %s", target, exc)
+            if len(all_posts) >= max_posts:
+                logger.info(
+                    "Early scan cap reached: platform=reddit cap=%d collected=%d",
+                    max_posts,
+                    len(all_posts),
+                )
+                break
 
         return all_posts
+
+    @staticmethod
+    def _effective_scan_cap(
+        limit_per_keyword: int,
+        requested_max_posts: Optional[int],
+    ) -> int:
+        try:
+            limit = int(limit_per_keyword)
+        except (TypeError, ValueError):
+            limit = 25
+        caps = [max(0, limit)]
+        if requested_max_posts is not None:
+            caps.append(max(0, int(requested_max_posts)))
+        try:
+            from config.settings import Settings
+
+            caps.append(max(0, int(Settings().max_reddit_posts)))
+        except Exception:
+            caps.append(3)
+        return min(caps)
+
+    @staticmethod
+    def _target_subreddit_cap() -> int:
+        try:
+            from config.settings import Settings
+
+            return max(1, int(Settings().max_target_subreddit_posts))
+        except Exception:
+            return 3
 
     # ── Normalisation ─────────────────────────────────────────────────
 

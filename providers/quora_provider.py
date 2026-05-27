@@ -200,7 +200,7 @@ class QuoraProvider:
         )
 
         posts: List[Dict[str, Any]] = []
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        with ThreadPoolExecutor(max_workers=1) as pool:
             futures = {
                 pool.submit(self._crawl_or_parse_quora_page, url): url
                 for url in crawl_urls
@@ -438,7 +438,14 @@ class QuoraProvider:
             html = resp.text
 
         except Exception as exc:
-            logger.warning("HTTP fetch failed for %s: %s", url, exc)
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            if status_code == 403 or "403" in str(exc):
+                logger.warning(
+                    "Quora returned 403; skipping live page fetch gracefully: %s",
+                    url,
+                )
+            else:
+                logger.warning("HTTP fetch failed for %s: %s", url, exc)
             return None
 
         # ── Extract via Open Graph / meta tags ────────────────────────

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from agents.opportunity_scanner.cache_manager import CacheManager
@@ -196,9 +195,14 @@ class MediumScannerAgent:
         keywords: Optional[List[str]] = None,
         limit_per_keyword: int = 10,
         original_intent: Optional[str] = None,
+        max_posts: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Run fetch, exact dedup, balanced filtering, and signal extraction."""
         raw_kw = keywords or self._default_keywords
+        scan_cap = self._effective_scan_cap(limit_per_keyword, max_posts)
+        if scan_cap <= 0:
+            logger.info("Early scan cap reached: platform=medium cap=%d", scan_cap)
+            return []
         normalised_queries = self._prepare_queries(raw_kw, original_intent=original_intent)
         tags: List[str] = []
         for query in normalised_queries:
@@ -213,13 +217,13 @@ class MediumScannerAgent:
             tags,
         )
 
-        raw_posts = self._fetch_all(tags, limit_per_keyword)
+        raw_posts = self._fetch_all(tags, scan_cap)
         if not raw_posts:
             logger.warning(
                 "Medium generated tags returned 0 articles; trying fallback tags=%s",
                 _MEDIUM_FALLBACK_TAGS,
             )
-            raw_posts = self._fetch_all(_MEDIUM_FALLBACK_TAGS, limit_per_keyword)
+            raw_posts = self._fetch_all(_MEDIUM_FALLBACK_TAGS, scan_cap)
 
         self.stats["fetched"] += len(raw_posts)
         logger.info("Medium fetch stage: fetched=%d articles", len(raw_posts))
@@ -346,26 +350,56 @@ class MediumScannerAgent:
     def _fetch_all(self, keywords: List[str], limit: int) -> List[Dict[str, Any]]:
         all_posts: List[Dict[str, Any]] = []
 
-        def fetch_tag(tag: str) -> List[Dict[str, Any]]:
-            return self._provider.fetch_posts(query=tag, limit=limit)
-
-        with ThreadPoolExecutor(max_workers=3) as pool:
-            futures = {pool.submit(fetch_tag, tag): tag for tag in keywords}
-            for future in as_completed(futures):
-                tag = futures[future]
-                try:
-                    posts = future.result()
-                    all_posts.extend(posts)
-                    logger.info("Fetched %d Medium articles for tag '%s'", len(posts), tag)
-                    if not posts:
-                        logger.info(
-                            "Medium tag returned 0 articles: tag=%s reason=empty_rss",
-                            tag,
-                        )
-                except Exception as exc:
-                    logger.error("Fetch failed for Medium tag '%s': %s", tag, exc)
+        for tag in keywords:
+            remaining = limit - len(all_posts)
+            if remaining <= 0:
+                logger.info(
+                    "Early scan cap reached: platform=medium cap=%d collected=%d",
+                    limit,
+                    len(all_posts),
+                )
+                break
+            try:
+                posts = self._provider.fetch_posts(query=tag, limit=remaining)
+                posts = posts[:remaining]
+                all_posts.extend(posts)
+                logger.info("Fetched %d Medium articles for tag '%s'", len(posts), tag)
+                if not posts:
+                    logger.info(
+                        "Medium tag returned 0 articles: tag=%s reason=empty_rss",
+                        tag,
+                    )
+            except Exception as exc:
+                logger.error("Fetch failed for Medium tag '%s': %s", tag, exc)
+            if len(all_posts) >= limit:
+                logger.info(
+                    "Early scan cap reached: platform=medium cap=%d collected=%d",
+                    limit,
+                    len(all_posts),
+                )
+                break
 
         return all_posts
+
+    @staticmethod
+    def _effective_scan_cap(
+        limit_per_keyword: int,
+        requested_max_posts: Optional[int],
+    ) -> int:
+        try:
+            limit = int(limit_per_keyword)
+        except (TypeError, ValueError):
+            limit = 10
+        caps = [max(0, limit)]
+        if requested_max_posts is not None:
+            caps.append(max(0, int(requested_max_posts)))
+        try:
+            from config.settings import Settings
+
+            caps.append(max(0, int(Settings().max_medium_posts)))
+        except Exception:
+            caps.append(2)
+        return min(caps)
 
     def _deduplicate(self, posts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Remove only exact duplicate IDs, exact duplicate URLs, and cache hits."""

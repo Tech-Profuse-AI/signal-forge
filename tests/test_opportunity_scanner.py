@@ -212,6 +212,64 @@ def test_cache_manager_expires_old_entries():
         assert cache.size == 1, "Only fresh entries should remain after load"
 
 
+def test_cache_manager_uses_development_minute_ttl(monkeypatch):
+    """Development mode should allow seen posts back after a short TTL."""
+    from agents.opportunity_scanner.cache_manager import CacheManager
+
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("SCANNER_CACHE_MAX_AGE_MINUTES", "10")
+    monkeypatch.delenv("CACHE_MAX_AGE_DAYS", raising=False)
+    monkeypatch.delenv("SCANNER_CACHE_MAX_AGE_DAYS", raising=False)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cache_path = os.path.join(tmpdir, "seen_posts.json")
+        now = datetime.now(timezone.utc)
+        with open(cache_path, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "fresh_post": (now - timedelta(minutes=5)).isoformat(),
+                    "stale_post": (now - timedelta(minutes=11)).isoformat(),
+                },
+                fh,
+            )
+
+        cache = CacheManager(cache_dir=tmpdir)
+
+        assert cache.max_age_seconds == 600
+        assert cache.has_seen("fresh_post"), "Fresh development entry should remain"
+        assert not cache.has_seen("stale_post"), "Old development entry should expire"
+        assert cache.size == 1
+
+
+def test_cache_manager_keeps_production_day_ttl(monkeypatch):
+    """Production defaults should retain the existing 7-day cache behavior."""
+    from agents.opportunity_scanner.cache_manager import CacheManager
+
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.delenv("CACHE_MAX_AGE_DAYS", raising=False)
+    monkeypatch.delenv("SCANNER_CACHE_MAX_AGE_DAYS", raising=False)
+    monkeypatch.delenv("SCANNER_CACHE_MAX_AGE_MINUTES", raising=False)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cache_path = os.path.join(tmpdir, "seen_posts.json")
+        now = datetime.now(timezone.utc)
+        with open(cache_path, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "fresh_post": (now - timedelta(days=2)).isoformat(),
+                    "stale_post": (now - timedelta(days=8)).isoformat(),
+                },
+                fh,
+            )
+
+        cache = CacheManager(cache_dir=tmpdir)
+
+        assert cache.max_age_seconds == 7 * 24 * 60 * 60
+        assert cache.has_seen("fresh_post"), "Production entry under 7 days should remain"
+        assert not cache.has_seen("stale_post"), "Production entry over 7 days should expire"
+        assert cache.size == 1
+
+
 def test_reddit_scanner_mock():
     """RedditScanner in mock mode loads and filters data correctly."""
     from agents.opportunity_scanner.reddit_scanner import RedditScanner

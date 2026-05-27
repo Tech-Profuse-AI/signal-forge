@@ -41,6 +41,69 @@ VALID_INTENTS = frozenset([
     "ignore",
 ])
 
+INTENT_ALIASES = {
+    "engage": "problem_intent",
+    "opportunity": "problem_intent",
+    "respond": "problem_intent",
+    "actionable": "problem_intent",
+}
+
+ACTIONABLE_SIGNALS = frozenset([
+    "pain_point",
+    "bottleneck",
+    "help_request",
+    "recommendation_request",
+])
+
+BUYING_PATTERNS = (
+    "recommend",
+    "looking for",
+    "any tool",
+    "tool for",
+    "best tool",
+    "which tool",
+    "alternative",
+    "budget",
+    "software",
+    "platform",
+)
+
+CHURN_PATTERNS = (
+    "frustrated with",
+    "fed up",
+    "switch from",
+    "switching from",
+    "migrating from",
+    "current tool",
+    "current platform",
+    "doesn't handle",
+    "doesnt handle",
+)
+
+WORKFLOW_PROBLEM_PATTERNS = (
+    "workflow",
+    "manual process",
+    "manual",
+    "automation",
+    "automate",
+    "bottleneck",
+    "scaling",
+    "at scale",
+    "doesn't scale",
+    "doesnt scale",
+    "can't keep up",
+    "cant keep up",
+    "operational",
+    "too much time",
+    "takes too long",
+    "time consuming",
+    "repetitive",
+    "pain point",
+    "frustrat",
+    "stuck",
+    "unsustainable",
+)
+
 _FALLBACK_RESULT: Dict[str, Any] = {
     "intent": "ignore",
     "confidence": 0.0,
@@ -52,9 +115,9 @@ _FALLBACK_RESULT: Dict[str, Any] = {
 # ── Classification prompt ────────────────────────────────────────────
 
 _SYSTEM_PROMPT = """\
-You are an intent classification engine for SignalForge, a social media \
-engagement platform. Your task is to analyse a Reddit post and classify \
-it into exactly ONE intent category.
+You are an intent classification engine for SignalForge, an opportunity \
+discovery and engagement platform. Your task is to analyse a Reddit or Quora \
+discussion and classify it into exactly ONE intent category.
 
 ## Intent categories
 
@@ -66,16 +129,27 @@ it into exactly ONE intent category.
 | competitor_mention  | Mentions competitor tools or platforms        |
 | feature_request     | Wants missing functionality                   |
 | churn_risk          | Frustration with current tools                |
-| ignore              | Not actionable                                |
+| ignore              | Unrelated, spam, meme, news, or no actionable pain/ask |
 
 ## Rules
 
 1. Choose the SINGLE most dominant intent.
 2. Assign a confidence score between 0.0 and 1.0.
 3. Provide brief reasoning (1-2 sentences).
-4. State the business relevance for a social media engagement tool vendor.
+4. State the business relevance for a vendor that solves social listening,
+   community engagement, workflow automation, or operations bottlenecks.
 5. Recommend ONE action: respond, monitor, escalate, skip.
-6. Output ONLY valid JSON — no markdown fences, no commentary.
+6. Treat pre-detected signals as strong positive evidence. If signals include
+   pain_point, bottleneck, help_request, or recommendation_request, prefer an
+   actionable intent over ignore unless the post is clearly spam or unrelated.
+7. Workflow frustrations, manual processes, automation pain, scaling struggles,
+   and operational bottlenecks are actionable. Classify them as problem_intent
+   or churn_risk, not ignore.
+8. Help or recommendation requests about tools, processes, or ways to solve a
+   work problem are actionable. Classify them as buying_intent or
+   problem_intent and usually recommend respond.
+9. Use skip only when the selected intent is ignore.
+10. Output ONLY valid JSON - no markdown fences, no commentary.
 
 ## Output schema (strict)
 
@@ -95,10 +169,12 @@ def _build_classification_prompt(opportunity: Dict[str, Any]) -> str:
     body = opportunity.get("body", "")
     signals = opportunity.get("opportunity_signals", [])
     subreddit = opportunity.get("subreddit", "")
+    platform = opportunity.get("platform") or opportunity.get("source") or "reddit"
     score = opportunity.get("source_score", opportunity.get("score", 0))
 
     user_message = (
-        f"Classify this Reddit post:\n\n"
+        f"Classify this Reddit/Quora opportunity:\n\n"
+        f"Platform: {platform}\n"
         f"Subreddit: r/{subreddit}\n"
         f"Score: {score}\n"
         f"Title: {title}\n"
@@ -108,6 +184,108 @@ def _build_classification_prompt(opportunity: Dict[str, Any]) -> str:
     )
 
     return f"{_SYSTEM_PROMPT}\n\n{user_message}"
+
+
+def _normalise_signals(raw: Any) -> set[str]:
+    """Return scanner signals as normalized lowercase labels."""
+    if raw is None:
+        return set()
+    if isinstance(raw, str):
+        values = re.split(r"[,;\s]+", raw)
+    elif isinstance(raw, (list, tuple, set)):
+        values = raw
+    else:
+        return set()
+
+    return {
+        str(value).strip().lower()
+        for value in values
+        if str(value).strip()
+    }
+
+
+def _opportunity_text(opportunity: Dict[str, Any]) -> str:
+    parts = [
+        opportunity.get("title", ""),
+        opportunity.get("body", ""),
+        opportunity.get("selftext", ""),
+        opportunity.get("description", ""),
+    ]
+    return " ".join(str(part or "") for part in parts).lower()
+
+
+def _contains_any(text: str, patterns: tuple[str, ...]) -> bool:
+    return any(pattern in text for pattern in patterns)
+
+
+def _has_actionable_evidence(opportunity: Dict[str, Any]) -> bool:
+    signals = _normalise_signals(
+        opportunity.get("opportunity_signals") or opportunity.get("signals")
+    )
+    if signals & ACTIONABLE_SIGNALS:
+        return True
+    return _contains_any(_opportunity_text(opportunity), WORKFLOW_PROBLEM_PATTERNS)
+
+
+def _infer_actionable_intent(opportunity: Dict[str, Any]) -> str:
+    signals = _normalise_signals(
+        opportunity.get("opportunity_signals") or opportunity.get("signals")
+    )
+    text = _opportunity_text(opportunity)
+
+    if "pain_point" in signals and _contains_any(text, CHURN_PATTERNS):
+        return "churn_risk"
+    if _contains_any(text, CHURN_PATTERNS):
+        return "churn_risk"
+    if (
+        {"help_request", "recommendation_request"} & signals
+        and _contains_any(text, BUYING_PATTERNS)
+    ):
+        return "buying_intent"
+    if _contains_any(text, BUYING_PATTERNS) and not (
+        {"pain_point", "bottleneck"} & signals
+    ):
+        return "buying_intent"
+    return "problem_intent"
+
+
+def _confidence_from_actionable_evidence(
+    result: Dict[str, Any],
+    opportunity: Dict[str, Any],
+) -> float:
+    signals = _normalise_signals(
+        opportunity.get("opportunity_signals") or opportunity.get("signals")
+    )
+    actionable_count = len(signals & ACTIONABLE_SIGNALS)
+
+    base = 0.68
+    if actionable_count >= 2:
+        base = 0.76
+    elif actionable_count == 1:
+        base = 0.70
+    if (
+        {"pain_point", "bottleneck"} & signals
+        and {"help_request", "recommendation_request"} & signals
+    ):
+        base = max(base, 0.78)
+
+    try:
+        original = float(result.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        original = 0.0
+
+    if original > 0:
+        base = max(base, min(original, 0.82))
+
+    return round(min(base, 0.84), 2)
+
+
+def _business_relevance_for_intent(intent: str) -> str:
+    if intent == "buying_intent":
+        return "High - the user is asking for a tool or process recommendation."
+    if intent == "churn_risk":
+        return "High - the user is frustrated with an existing workflow or tool."
+    return "Medium - the user describes workflow or operations pain worth engaging."
 
 
 # ── IntentAgent ──────────────────────────────────────────────────────
@@ -154,13 +332,17 @@ class IntentAgent:
 
         try:
             raw_response = self._llm.generate(prompt)
+            raw_intent = self._extract_raw_intent(raw_response)
             result = self._parse_and_validate(raw_response)
 
             # Retry once if parsing produced fallback (ignore with 0.0 confidence)
             if result["intent"] == "ignore" and result["confidence"] == 0.0:
                 logger.info("Retrying classification for [%s] after parse failure", post_id)
                 raw_response = self._llm.generate(prompt)
+                raw_intent = self._extract_raw_intent(raw_response)
                 result = self._parse_and_validate(raw_response)
+
+            result = self._relax_actionable_ignore(opportunity, result, raw_intent)
         except Exception as exc:
             logger.error(
                 "Classification failed for [%s]: %s — using fallback",
@@ -200,6 +382,54 @@ class IntentAgent:
         self._log_distribution()
         return results
 
+    def _relax_actionable_ignore(
+        self,
+        opportunity: Dict[str, Any],
+        result: Dict[str, Any],
+        raw_intent: str,
+    ) -> Dict[str, Any]:
+        if result.get("intent") != "ignore" or raw_intent != "ignore":
+            return result
+        if not _has_actionable_evidence(opportunity):
+            return result
+
+        intent = _infer_actionable_intent(opportunity)
+        confidence = _confidence_from_actionable_evidence(result, opportunity)
+        signals = sorted(
+            _normalise_signals(
+                opportunity.get("opportunity_signals") or opportunity.get("signals")
+            )
+            & ACTIONABLE_SIGNALS
+        )
+
+        logger.info(
+            "Relaxed ignore for [%s] -> %s based on actionable signals=%s",
+            opportunity.get("id", "unknown"),
+            intent,
+            signals,
+        )
+
+        return {
+            "intent": intent,
+            "confidence": confidence,
+            "reasoning": (
+                "Pre-detected opportunity signals indicate an actionable "
+                "workflow, pain, bottleneck, help, or recommendation discussion."
+            ),
+            "business_relevance": _business_relevance_for_intent(intent),
+            "recommended_action": "respond",
+        }
+
+    @staticmethod
+    def _extract_raw_intent(raw: str) -> str:
+        from providers.json_utils import extract_json
+
+        try:
+            data = extract_json(raw)
+        except ValueError:
+            return ""
+        return str(data.get("intent", "")).strip().lower()
+
     # ── Parsing & Validation ──────────────────────────────────────────
 
     def _parse_and_validate(self, raw: str) -> Dict[str, Any]:
@@ -217,6 +447,7 @@ class IntentAgent:
 
         # Validate intent
         intent = data.get("intent", "").strip().lower()
+        intent = INTENT_ALIASES.get(intent, intent)
         if intent not in VALID_INTENTS:
             logger.warning(
                 "Invalid intent '%s' — falling back to ignore", intent
